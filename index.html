@@ -60,7 +60,8 @@ header.top{
 .count{margin-left:auto;font-size:11px;color:var(--txt3);text-align:right;flex:none}
 .count b{color:var(--accent);font-weight:700}
 
-.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;-ms-overflow-style:none}
+.toolbar{display:flex;align-items:center;gap:10px;padding-bottom:12px}
+.filters{display:flex;gap:8px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none;-ms-overflow-style:none}
 .filters::-webkit-scrollbar{display:none}
 .chip{
   flex:none;padding:7px 13px;border-radius:999px;font-size:13px;white-space:nowrap;
@@ -69,12 +70,40 @@ header.top{
 .chip:hover{border-color:var(--line2)}
 .chip.on{background:var(--txt);color:var(--ink);border-color:var(--txt);font-weight:600}
 
+/* view-mode switch */
+.viewseg{display:flex;flex:none;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:3px}
+.viewseg button{width:32px;height:30px;border-radius:var(--r-sm);display:grid;place-items:center;color:var(--txt3);transition:.12s}
+.viewseg button:hover{color:var(--txt2)}
+.viewseg button.on{background:var(--panel2);color:var(--accent)}
+
 /* ---------- GALLERY ---------- */
-.grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));
-  gap:13px;padding:4px 0 120px;
+.gallery{padding:4px 0 40px}
+.gallery.view-compact{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.gallery.view-large{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}
+.gallery.view-list{display:flex;flex-direction:column;gap:10px}
+@media(min-width:560px){
+  .gallery.view-compact{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .gallery.view-large{gap:16px}
 }
-@media(min-width:560px){.grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}}
+@media(min-width:880px){
+  .gallery.view-compact{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+}
+/* list mode: horizontal row cards */
+.view-list .card{flex-direction:row;align-items:stretch;border-radius:var(--r-md)}
+.view-list .thumb{width:128px;flex:none;aspect-ratio:1/1}
+.view-list .body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:12px 14px}
+.view-list .card .name{-webkit-line-clamp:2;min-height:0;font-size:15px;margin-bottom:4px}
+.view-list .card .sub{font-size:12px}
+.view-list .thumb .badge:not(.mono){display:none}     /* clips on the narrow thumb; shown in body instead */
+.lbase{display:none}
+.view-list .lbase{display:block;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+@media(min-width:560px){.view-list .thumb{width:160px}}
+
+.loadmore-wrap{display:flex;justify-content:center;padding:8px 0 calc(var(--safe-b) + 96px)}
+.loadmore{padding:11px 22px;border-radius:999px;background:var(--panel);border:1px solid var(--line2);
+  color:var(--txt);font-size:13px;font-weight:600;transition:.15s}
+.loadmore:hover{border-color:var(--accent);color:var(--accent)}
+.loadmore[hidden]{display:none}
 .card{
   background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
   overflow:hidden;cursor:pointer;transition:transform .18s cubic-bezier(.2,.7,.3,1),border-color .18s;
@@ -228,12 +257,25 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       </div>
       <div class="count"><b id="cnt">…</b><br>recettes</div>
     </div>
-    <div class="filters" id="filters"></div>
+    <div class="toolbar">
+      <div class="filters" id="filters"></div>
+      <div class="viewseg" id="viewToggle" role="radiogroup" aria-label="Affichage des recettes">
+        <button data-v="compact" aria-label="Grille compacte" title="Grille compacte">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"></path></svg>
+        </button>
+        <button data-v="large" aria-label="Grandes cartes" title="Grandes cartes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z"></path></svg>
+        </button>
+        <button data-v="list" aria-label="Liste" title="Liste">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zm0-9H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V5c0-.55-.45-1-1-1z"></path></svg>
+        </button>
+      </div>
+    </div>
   </header>
 
   <main>
-    <div id="gallery" class="grid"></div>
-    <div id="sentinel"></div>
+    <div id="gallery" class="gallery view-large"></div>
+    <div class="loadmore-wrap"><button id="loadMore" class="loadmore" hidden></button></div>
   </main>
 </div>
 
@@ -496,7 +538,7 @@ function renderRecipe(src,v,canvas,w,h){
 
 //// ---------- STATE ----------
 let RECIPES=[], FILTERED=[], rendered=0;
-const PAGE=60;
+let VIEW=['compact','large','list'].includes(localStorage.getItem('fudge_view'))?localStorage.getItem('fudge_view'):'large';
 let cur=null;            // recipe being edited
 let vals={};             // live control values
 let userImg=null;        // uploaded image data url
@@ -533,12 +575,13 @@ function applyFilters(){
     return true;
   });
   rendered=0;$('#gallery').innerHTML='';
-  if(!FILTERED.length){$('#gallery').innerHTML='<div class="empty">Aucune recette trouvée 🎞️</div>';return;}
+  if(!FILTERED.length){$('#gallery').innerHTML='<div class="empty">Aucune recette trouvée 🎞️</div>';$('#loadMore').hidden=true;return;}
   renderMore();
 }
 
-//// ---------- GALLERY RENDER (incremental) ----------
-const CARD_W=240, CARD_H=192;
+//// ---------- GALLERY RENDER (load-more, 3 view modes) ----------
+function cardDims(){return VIEW==='large'?[480,384]:VIEW==='list'?[320,240]:[260,208];}
+function pageSize(){return VIEW==='compact'?36:12;}
 function card(r){
   const c=el('div','card');
   c.tabIndex=0;c.setAttribute('role','button');
@@ -546,37 +589,60 @@ function card(r){
   c.onclick=()=>openEditor(r);
   c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openEditor(r);}};
   const fav=favs.has(r._i);
+  const [w,h]=cardDims();
   c.innerHTML=`
     <div class="thumb">
-      <canvas class="ph" data-ri="${r._i}" width="${CARD_W}" height="${CARD_H}" aria-hidden="true"></canvas>
+      <canvas class="ph" data-ri="${r._i}" width="${w}" height="${h}" aria-hidden="true"></canvas>
       <span class="badge">${esc(r.base||'—')}</span>
       ${r.mono?'<span class="badge mono">N&B</span>':''}
       <button class="fav ${fav?'on':''}" data-i="${r._i}" aria-label="Ajouter aux favoris" aria-pressed="${fav}">${heartSvg(fav,16)}</button>
     </div>
     <div class="body">
+      <div class="lbase">${esc(r.base||'')}${r.mono?' · N&B':''}</div>
       <p class="name">${esc(r.name||'Sans titre')}</p>
       <div class="sub">${esc(r.creator||'—')} · ${esc(r.camera||r.sensor||'')}</div>
     </div>`;
   c.querySelector('.fav').onclick=(e)=>{e.stopPropagation();toggleFav(r._i,e.currentTarget);};
   const cv=c.querySelector('canvas');
-  if(baseReady)renderRecipe(baseImg,recipeToVals(r),cv,CARD_W,CARD_H);
+  if(baseReady)renderRecipe(baseImg,recipeToVals(r),cv,w,h);
   return c;
 }
-// (Re)paint every card thumbnail once the generic image is available.
+// (Re)paint every card thumbnail (after the image loads, or on view change).
 function rerenderCards(){
-  if(!baseReady)return;
+  if(!baseReady)return;const [w,h]=cardDims();
   document.querySelectorAll('.thumb canvas[data-ri]').forEach(cv=>{
-    const r=RECIPES[+cv.dataset.ri]; if(r)renderRecipe(baseImg,recipeToVals(r),cv,CARD_W,CARD_H);
+    const r=RECIPES[+cv.dataset.ri]; if(r)renderRecipe(baseImg,recipeToVals(r),cv,w,h);
   });
 }
 function renderMore(){
   const g=$('#gallery');const frag=document.createDocumentFragment();
-  const end=Math.min(rendered+PAGE,FILTERED.length);
+  const end=Math.min(rendered+pageSize(),FILTERED.length);
   for(let i=rendered;i<end;i++)frag.appendChild(card(FILTERED[i]));
-  g.appendChild(frag);rendered=end;
+  g.appendChild(frag);rendered=end;updateLoadMore();
 }
-new IntersectionObserver((es)=>{if(es[0].isIntersecting&&rendered<FILTERED.length)renderMore();},
-  {rootMargin:'600px'}).observe($('#sentinel'));
+function updateLoadMore(){
+  const btn=$('#loadMore');const rem=FILTERED.length-rendered;
+  if(rem>0){btn.hidden=false;btn.textContent=`Charger plus · ${rem} restantes`;}
+  else btn.hidden=true;
+}
+$('#loadMore').onclick=renderMore;
+
+//// ---------- VIEW MODE ----------
+function setView(v){
+  if(!['compact','large','list'].includes(v))v='large';
+  VIEW=v;localStorage.setItem('fudge_view',v);
+  $('#gallery').className='gallery view-'+v;
+  document.querySelectorAll('#viewToggle button').forEach(b=>{
+    const on=b.dataset.v===v;b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');b.tabIndex=on?0:-1;
+  });
+  rendered=0;$('#gallery').innerHTML='';renderMore();   // re-render so canvases match the new size
+}
+(function initViewToggle(){
+  const vt=$('#viewToggle');vt.setAttribute('data-rg','view');
+  vt.querySelectorAll('button').forEach(b=>{b.setAttribute('role','radio');b.setAttribute('data-rv',b.dataset.v);b.onclick=()=>setView(b.dataset.v);});
+  setView(VIEW);
+  wireRadios(vt);
+})();
 
 function esc(s){return (s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 
