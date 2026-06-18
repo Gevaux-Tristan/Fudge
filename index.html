@@ -242,6 +242,21 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   z-index:100;opacity:0;transition:.25s;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* in-app camera */
+.cam{position:fixed;inset:0;z-index:90;background:#000;display:flex;flex-direction:column}
+.cam[hidden]{display:none}
+.cam video{flex:1;width:100%;height:100%;object-fit:cover;background:#000;min-height:0}
+.cam-close{position:absolute;top:calc(var(--safe-t) + 12px);left:14px;z-index:2;width:44px;height:44px;border-radius:50%;
+  display:grid;place-items:center;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);color:#fff}
+.cam-bar{position:absolute;left:0;right:0;bottom:0;padding:0 28px calc(var(--safe-b) + 26px);
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(0deg,rgba(0,0,0,.55),transparent)}
+.cam-spacer,.cam-flip{width:52px;height:52px;flex:none}
+.cam-flip{border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);color:#fff}
+.cam-shutter{width:72px;height:72px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.45);
+  box-shadow:0 0 0 2px rgba(0,0,0,.3);transition:transform .1s}
+.cam-shutter:active{transform:scale(.92)}
+
 .fabs{position:fixed;right:16px;bottom:calc(var(--safe-b) + 16px);z-index:30;display:flex;flex-direction:column;gap:10px}
 .fab{width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--ink);
   display:grid;place-items:center;box-shadow:0 8px 24px -6px var(--accent);transition:transform .15s,filter .15s}
@@ -316,6 +331,10 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
   <div class="preview" id="preview">
     <canvas id="pvCanvas" role="img" aria-label="Aperçu de la recette appliquée à la photo"></canvas>
     <div class="pv-tools">
+      <button class="pv-btn" id="btnCam">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg>
+        Caméra
+      </button>
       <label class="pv-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>
         Ma photo
@@ -342,6 +361,21 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- IN-APP CAMERA -->
+<div class="cam" id="cam" role="dialog" aria-modal="true" aria-label="Prendre une photo" hidden>
+  <video id="camVideo" playsinline autoplay muted></video>
+  <button class="cam-close" id="camClose" aria-label="Fermer la caméra">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+  </button>
+  <div class="cam-bar">
+    <span class="cam-spacer"></span>
+    <button class="cam-shutter" id="camShutter" aria-label="Prendre la photo"></button>
+    <button class="cam-flip" id="camFlip" aria-label="Changer de caméra">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"></path></svg>
+  </button>
+  </div>
+</div>
 
 <script>
 //// ---------- MATERIAL DESIGN ICONS (Apache 2.0) ----------
@@ -849,6 +883,44 @@ $('#upload').addEventListener('change',e=>{
   rd.onload=()=>{const im=new Image();im.onload=()=>{userImg=im;paint();};im.src=rd.result;};
   rd.readAsDataURL(f);
 });
+
+//// ---------- IN-APP CAMERA ----------
+let camStream=null, camFacing='environment';
+async function startCam(){
+  if(camStream)camStream.getTracks().forEach(t=>t.stop());
+  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing},audio:false});
+  const v=$('#camVideo');v.srcObject=camStream;
+  v.style.transform=(camFacing==='user')?'scaleX(-1)':'none';   // mirror selfie preview
+  await v.play().catch(()=>{});
+}
+async function openCam(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Caméra non disponible');$('#upload').click();return;}
+  try{ await startCam(); $('#cam').hidden=false; }
+  catch(e){ toast('Accès caméra refusé'); $('#upload').click(); }
+}
+function closeCam(){
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  $('#camVideo').srcObject=null; $('#cam').hidden=true;
+}
+async function flipCam(){
+  camFacing=camFacing==='environment'?'user':'environment';
+  try{ await startCam(); }catch(e){ toast('Autre caméra indisponible'); }
+}
+function shootCam(){
+  const v=$('#camVideo'); if(!v.videoWidth){toast('Caméra pas prête');return;}
+  const cv=document.createElement('canvas'); cv.width=v.videoWidth; cv.height=v.videoHeight;
+  const ctx=cv.getContext('2d');
+  if(camFacing==='user'){ctx.translate(cv.width,0);ctx.scale(-1,1);}   // un-mirror to match preview
+  ctx.drawImage(v,0,0,cv.width,cv.height);
+  const im=new Image();
+  im.onload=()=>{userImg=im;closeCam();paint();toast('Photo capturée');};
+  im.src=cv.toDataURL('image/jpeg',0.92);
+}
+$('#btnCam').onclick=openCam;
+$('#camClose').onclick=closeCam;
+$('#camFlip').onclick=flipCam;
+$('#camShutter').onclick=shootCam;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#cam').hidden)closeCam();});
 
 //// foot buttons
 $('#btnReset').onclick=()=>{if(cur)openEditor(cur,cur._blank);toast('Réglages réinitialisés');};
