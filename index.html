@@ -159,19 +159,32 @@ header.top{
 .ed-head .hfav:hover{background:var(--line2)}
 .ed-head .hfav.on{color:var(--accent)}
 
-.ed-scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(var(--safe-b) + 24px)}
-
-.preview{position:relative;width:100%;aspect-ratio:3/2;background:#000;overflow:hidden}
-.preview canvas{width:100%;height:100%;object-fit:cover;display:block}
+/* pinned preview — full photo (contain), ~half the screen */
+.preview{position:relative;width:100%;height:50vh;background:#000;overflow:hidden;flex:none}
+.preview canvas{width:100%;height:100%;object-fit:contain;display:block}
+@media(min-width:880px){.preview{height:300px}}
 .pv-tools{position:absolute;left:10px;bottom:10px;display:flex;gap:8px;z-index:4}
 .pv-btn{font-size:12px;padding:7px 11px;border-radius:var(--r-md);background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
   color:#fff;display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.16);transition:background .15s,border-color .15s}
 .pv-btn:hover{background:rgba(0,0,0,.7);border-color:rgba(255,255,255,.3)}
 
-.section{padding:16px}
-.section + .section{border-top:1px solid var(--line)}
+/* section tabs */
+.tabs{display:flex;gap:4px;overflow-x:auto;flex:none;padding:9px 12px;border-bottom:1px solid var(--line);
+  scrollbar-width:none;-ms-overflow-style:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--txt3);white-space:nowrap;transition:.12s}
+.tab:hover{color:var(--txt2)}
+.tab.on{background:var(--panel2);color:var(--accent)}
+
+/* horizontally-swipeable panels — one section at a time, preview stays pinned */
+.panels{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
+  scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
+.panels::-webkit-scrollbar{display:none}
+.panel{flex:0 0 100%;width:100%;scroll-snap-align:start;overflow-y:auto;overscroll-behavior:contain;
+  padding:16px 16px calc(var(--safe-b) + 16px)}
+
 .sec-h{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--txt3);
-  margin:0 0 14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  margin:14px 0 12px;font-weight:700;display:flex;align-items:center;gap:8px}
 .sec-h .ln{flex:1;height:1px;background:var(--line)}
 
 .basepick{display:flex;flex-wrap:wrap;gap:7px}
@@ -255,7 +268,6 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div>
         <h1>Fudge</h1>
       </div>
-      <div class="count"><b id="cnt">…</b><br>recettes</div>
     </div>
     <div class="toolbar">
       <div class="filters" id="filters"></div>
@@ -301,42 +313,24 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
     </button>
   </div>
 
-  <div class="ed-scroll">
-    <div class="preview" id="preview">
-      <canvas id="pvCanvas" role="img" aria-label="Aperçu de la recette appliquée à la photo"></canvas>
-      <div class="pv-tools">
-        <label class="pv-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>
-          Ma photo
-          <input id="upload" type="file" accept="image/*" hidden>
-        </label>
-      </div>
+  <div class="preview" id="preview">
+    <canvas id="pvCanvas" role="img" aria-label="Aperçu de la recette appliquée à la photo"></canvas>
+    <div class="pv-tools">
+      <label class="pv-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>
+        Ma photo
+        <input id="upload" type="file" accept="image/*" hidden>
+      </label>
     </div>
+  </div>
 
-    <div class="section">
-      <div class="sec-h">Simulation de base <span class="ln"></span></div>
-      <div class="basepick" id="basepick"></div>
-    </div>
-
-    <div class="section">
-      <div class="sec-h">Ton & Couleur <span class="ln"></span></div>
-      <div id="sliders"></div>
-    </div>
-
-    <div class="section">
-      <div class="sec-h">Effets <span class="ln"></span></div>
-      <div id="segments"></div>
-    </div>
-
-    <div class="section">
-      <div class="sec-h">Balance des blancs <span class="ln"></span></div>
-      <div class="wbline"><span>Réglage</span><b id="wbVal">—</b></div>
-    </div>
-
-    <div class="section" id="rawSec">
-      <div class="sec-h">Recette d'origine <span class="ln"></span></div>
-      <div class="rawbox" id="rawBox"></div>
-    </div>
+  <div class="tabs" id="edTabs" role="tablist" aria-label="Sections de réglage"></div>
+  <div class="panels" id="edPanels">
+    <section class="panel" id="panel-base" role="tabpanel" aria-label="Simulation de base"></section>
+    <section class="panel" id="panel-light" role="tabpanel" aria-label="Lumière"></section>
+    <section class="panel" id="panel-color" role="tabpanel" aria-label="Couleur"></section>
+    <section class="panel" id="panel-detail" role="tabpanel" aria-label="Détail"></section>
+    <section class="panel" id="panel-recipe" role="tabpanel" aria-label="Recette"></section>
   </div>
 
   <div class="ed-foot">
@@ -551,7 +545,6 @@ const el=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;}
 //// ---------- LOAD ----------
 fetch('recipes.json').then(r=>r.json()).then(data=>{
   RECIPES=data.map((r,i)=>{r._i=i;return r;});
-  $('#cnt').textContent=RECIPES.length;
   buildFilters();
   applyFilters();
 }).catch(e=>{
@@ -687,11 +680,9 @@ function openEditor(r,blank){
   cur=r;
   vals=recipeToVals(r);
   $('#edName').textContent=blank?'Nouvelle recette':(r.name||'Sans titre');
-  $('#edSub').textContent=blank?'Partez des curseurs ci-dessous':`${r.creator||'—'} · ${r.sensor||r.camera||''}`;
-  $('#rawSec').style.display=blank?'none':'';
-  if(!blank)$('#rawBox').textContent=(r.raw||'').trim()||'—';
+  $('#edSub').textContent=blank?'Partez des réglages ci-dessous':`${r.creator||'—'} · ${r.sensor||r.camera||''}`;
   syncFav();
-  buildBasePick();buildSliders();buildSegments();
+  buildEditorPanels();
   paint();
   document.body.style.overflow='hidden';
   // a11y: remember focus origin, neutralise background, move focus into the dialog
@@ -715,27 +706,94 @@ function syncFav(){const on=cur&&!cur._blank&&favs.has(cur._i);const b=$('#edFav
 $('#edFav').onclick=()=>{if(!cur||cur._blank)return;toggleFav(cur._i);syncFav();
   document.querySelectorAll(`.fav[data-i="${cur._i}"]`).forEach(b=>{const on=favs.has(cur._i);b.classList.toggle('on',on);setHeart(b,on);});};
 
-function buildBasePick(){
-  const w=$('#basepick');w.innerHTML='';
-  w.setAttribute('role','radiogroup');w.setAttribute('aria-label','Simulation de base');w.setAttribute('data-rg','base');
+//// ---------- EDITOR PANELS (tabs + horizontal swipe) ----------
+const SLIDER_BY_K=Object.fromEntries(NUM_SLIDERS.map(s=>[s.k,s]));
+const ED_PANELS=[
+  {id:'base',  label:'Base'},
+  {id:'light', label:'Lumière', sliders:['highlights','shadows','clarity'], segs:['dr']},
+  {id:'color', label:'Couleur', sliders:['color','wbRed','wbBlue'], segs:['chrome','chromeBlue']},
+  {id:'detail',label:'Détail',  sliders:['sharpness','noiseReduction'], segs:['grain','grainSize']},
+  {id:'recipe',label:'Recette'},
+];
+let curTab=0;
+
+function makeSlider(s){
+  const row=el('div','sld');
+  row.innerHTML=`<div class="sld-top"><label for="i_${s.k}">${s.label}</label><span class="sld-val" id="v_${s.k}" aria-hidden="true"></span></div>
+    <div class="range"><div class="track"></div><div class="midmark"></div><div class="fill" id="f_${s.k}"></div>
+    <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${vals[s.k]}" id="i_${s.k}"></div>`;
+  const inp=row.querySelector('input');
+  inp.addEventListener('input',()=>{vals[s.k]=parseFloat(inp.value);updSlider(s);paintLook();});
+  return row;
+}
+function makeSeg(key){
+  if(key==='dr')        return seg('Plage dynamique',['DR100','DR200','DR400','Auto'],vals.dr,v=>{vals.dr=v;fillPanel('light');paintLook();},true);
+  if(key==='grain')     return segLv('Grain',vals.grain,v=>{vals.grain=v;fillPanel('detail');paintLook();});
+  if(key==='grainSize') return vals.grain!=='Off'?seg('Taille du grain',['Small','Large'],vals.grainSize,v=>{vals.grainSize=v;fillPanel('detail');paintLook();}):null;
+  if(key==='chrome')    return vals.mono?null:segLv('Color Chrome Effect',vals.colorChrome,v=>{vals.colorChrome=v;fillPanel('color');paintLook();});
+  if(key==='chromeBlue')return vals.mono?null:segLv('Color Chrome Blue',vals.colorChromeBlue,v=>{vals.colorChromeBlue=v;fillPanel('color');paintLook();});
+  return null;
+}
+function basePickEl(){
+  const w=el('div','basepick');w.setAttribute('role','radiogroup');w.setAttribute('aria-label','Simulation de base');w.setAttribute('data-rg','base');
   BASES.forEach(b=>{const btn=el('button');btn.textContent=b;const on=vals.base===b;if(on)btn.classList.add('on');
     btn.setAttribute('role','radio');btn.setAttribute('aria-checked',on?'true':'false');btn.setAttribute('data-rv',b);
-    btn.onclick=()=>{vals.base=b;vals.mono=/acros|mono|sepia/i.test(b);buildBasePick();paint();};w.appendChild(btn);});
-  wireRadios(w);
+    btn.onclick=()=>{vals.base=b;vals.mono=/acros|mono|sepia/i.test(b);fillPanel('base');fillPanel('color');paint();};w.appendChild(btn);});
+  return w;
 }
-function buildSliders(){
-  const w=$('#sliders');w.innerHTML='';
-  NUM_SLIDERS.forEach(s=>{
-    const row=el('div','sld');
-    row.innerHTML=`<div class="sld-top"><label for="i_${s.k}">${s.label}</label><span class="sld-val" id="v_${s.k}" aria-hidden="true"></span></div>
-      <div class="range"><div class="track"></div><div class="midmark"></div><div class="fill" id="f_${s.k}"></div>
-      <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${vals[s.k]}" id="i_${s.k}"></div>`;
-    w.appendChild(row);
-    const inp=row.querySelector('input');
-    inp.addEventListener('input',()=>{vals[s.k]=parseFloat(inp.value);updSlider(s);paintLook();});
-    updSlider(s);
+function recipeEl(){
+  const f=document.createDocumentFragment();
+  const wb=el('div','wbline');wb.innerHTML=`<span>Balance des blancs</span><b id="wbVal">${esc(wbText())}</b>`;f.appendChild(wb);
+  if(cur&&!cur._blank){
+    const h=el('div','sec-h');h.innerHTML='Recette d\'origine <span class="ln"></span>';f.appendChild(h);
+    const rb=el('div','rawbox');rb.id='rawBox';rb.textContent=(cur.raw||'').trim()||'—';f.appendChild(rb);
+  }
+  return f;
+}
+function fillPanel(id){
+  const cfg=ED_PANELS.find(p=>p.id===id);const host=document.getElementById('panel-'+id);
+  host.innerHTML='';
+  if(id==='base')        host.appendChild(basePickEl());
+  else if(id==='recipe') host.appendChild(recipeEl());
+  else{
+    (cfg.sliders||[]).forEach(k=>host.appendChild(makeSlider(SLIDER_BY_K[k])));
+    (cfg.segs||[]).forEach(key=>{const e=makeSeg(key);if(e)host.appendChild(e);});
+  }
+  host.querySelectorAll('[role=radiogroup]').forEach(wireRadios);
+  (cfg.sliders||[]).forEach(k=>updSlider(SLIDER_BY_K[k]));
+}
+function buildTabs(){
+  const t=$('#edTabs');t.innerHTML='';
+  ED_PANELS.forEach((p,i)=>{const b=el('button','tab');b.textContent=p.label;b.setAttribute('role','tab');b.dataset.i=i;
+    b.setAttribute('aria-controls','panel-'+p.id);b.onclick=()=>setTab(i);t.appendChild(b);});
+}
+function highlightTab(i){
+  document.querySelectorAll('#edTabs .tab').forEach((b,j)=>{const on=j===i;b.classList.toggle('on',on);
+    b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
+}
+function setTab(i,smooth=true){
+  i=clamp(i,0,ED_PANELS.length-1);curTab=i;
+  const p=$('#edPanels');const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  p.scrollTo({left:i*p.clientWidth,behavior:(smooth&&!reduce)?'smooth':'auto'});
+  highlightTab(i);
+}
+function buildEditorPanels(){
+  buildTabs();
+  ED_PANELS.forEach(p=>fillPanel(p.id));
+  setTab(0,false);
+}
+// sync active tab while swiping; arrow-key tab navigation
+(function initTabs(){
+  const p=$('#edPanels');let raf;
+  p.addEventListener('scroll',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=null;
+    const i=Math.round(p.scrollLeft/p.clientWidth);if(i!==curTab){curTab=i;highlightTab(i);}});});
+  $('#edTabs').addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'){e.preventDefault();setTab(curTab+1);}
+    else if(e.key==='ArrowLeft'){e.preventDefault();setTab(curTab-1);}
+    else return;
+    const b=document.querySelector('#edTabs .tab.on');if(b)b.focus();
   });
-}
+})();
 function updSlider(s){
   const v=vals[s.k];const span=$('#v_'+s.k);
   const txt=(v>0?'+':'')+ (Number.isInteger(v)?v:v.toFixed(1));
@@ -747,17 +805,6 @@ function updSlider(s){
   if(v>=0){f.style.left=mid+'%';f.style.width=(pct-mid)+'%';f.style.background='var(--pos)';}
   else{f.style.left=pct+'%';f.style.width=(mid-pct)+'%';f.style.background='var(--neg)';}
   $('#i_'+s.k).parentNode.querySelector('.midmark').style.left=mid+'%';
-}
-function buildSegments(){
-  const w=$('#segments');w.innerHTML='';
-  w.appendChild(seg('Plage dynamique',['DR100','DR200','DR400','Auto'],vals.dr,v=>{vals.dr=v;buildSegments();paintLook();},true));
-  w.appendChild(segLv('Grain',vals.grain,v=>{vals.grain=v;buildSegments();paintLook();}));
-  if(vals.grain!=='Off')w.appendChild(seg('Taille du grain',['Small','Large'],vals.grainSize,v=>{vals.grainSize=v;buildSegments();paintLook();}));
-  if(!vals.mono){
-    w.appendChild(segLv('Color Chrome Effect',vals.colorChrome,v=>{vals.colorChrome=v;buildSegments();paintLook();}));
-    w.appendChild(segLv('Color Chrome Blue',vals.colorChromeBlue,v=>{vals.colorChromeBlue=v;buildSegments();paintLook();}));
-  }
-  w.querySelectorAll('.seg').forEach(wireRadios);
 }
 function seg(label,opts,val,fn,acc){
   const row=el('div','seg-row');row.innerHTML=`<label>${label}</label>`;
@@ -775,16 +822,19 @@ function segLv(label,val,fn){
 }
 
 //// ---------- EDITOR PREVIEW (canvas, full film engine) ----------
-const PV_W=720, PV_H=480;
 const pvCanvas=$('#pvCanvas');
-function paint(){paintPreview();
-  $('#wbVal').textContent=wbText();
-  $('#btnExport').hidden=!userImg;}
+function paint(){paintPreview();syncWbReadout();$('#btnExport').hidden=!userImg;}
+function syncWbReadout(){const wv=$('#wbVal');if(wv)wv.textContent=wbText();}
 let pvScheduled=false;
 function paintPreview(){
   if(pvScheduled)return;pvScheduled=true;
   requestAnimationFrame(()=>{pvScheduled=false;
-    renderRecipe(userImg||baseImg, vals, pvCanvas, PV_W, PV_H);});
+    // render at the source photo's own aspect ratio so the whole image shows (contain)
+    const src=userImg||baseImg;
+    let w=src.naturalWidth||3, h=src.naturalHeight||2, m=Math.max(w,h), cap=1100;
+    if(m>cap){const s=cap/m;w=Math.round(w*s);h=Math.round(h*s);}
+    renderRecipe(src, vals, pvCanvas, w, h);
+    syncWbReadout();});
 }
 // slider/segment handlers call paintLook(); keep the name, route to the canvas render.
 const paintLook=paintPreview;
