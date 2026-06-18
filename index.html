@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#000000">
 <title>Fudge</title>
 <meta name="description" content="Fudge — recettes de simulation de film Fujifilm en presets + curseurs, pour retoucher vos photos.">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg?v=3">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -54,8 +54,8 @@ header.top{
   background:linear-gradient(180deg,var(--bg) 62%,rgba(0,0,0,0));
 }
 .brand{display:flex;align-items:center;gap:11px;margin-bottom:13px}
-/* Branding mark — the Fudge "F" glyph (logo.svg) on the dark header. */
-.logo{height:32px;width:auto;flex:none;display:block}
+/* Branding — the Fudge wordmark (logo.svg) on the dark header. */
+.logo{height:36px;width:auto;flex:none;display:block}
 .brand h1{font-size:21px;font-weight:700;letter-spacing:-.01em;margin:0;line-height:1}
 .count{margin-left:auto;font-size:11px;color:var(--txt3);text-align:right;flex:none}
 .count b{color:var(--accent);font-weight:700}
@@ -279,10 +279,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 <div class="app">
   <header class="top">
     <div class="brand">
-      <img class="logo" src="logo.svg" alt="Fudge" width="28" height="32">
-      <div>
-        <h1>Fudge</h1>
-      </div>
+      <img class="logo" src="logo.svg?v=3" alt="Fudge" width="161" height="36">
     </div>
     <div class="toolbar">
       <div class="filters" id="filters"></div>
