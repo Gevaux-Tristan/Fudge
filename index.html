@@ -68,8 +68,6 @@ header.top{
 }
 .chip:hover{border-color:var(--line2)}
 .chip.on{background:var(--txt);color:var(--ink);border-color:var(--txt);font-weight:600}
-.chip.sim.on{background:var(--accent);border-color:var(--accent);color:var(--ink)}
-.chip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
 
 /* ---------- GALLERY ---------- */
 .grid{
@@ -503,19 +501,10 @@ let cur=null;            // recipe being edited
 let vals={};             // live control values
 let userImg=null;        // uploaded image data url
 const favs=new Set(JSON.parse(localStorage.getItem('fuji_favs')||'[]'));
-const filterState={mono:'all', base:null, fav:false};
+const filterState={mono:'all', fav:false};
 
 const $=s=>document.querySelector(s);
 const el=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;};
-
-const BASE_COLORS={
- 'Velvia':['#ff4d6d','#1fb6b0'],'Astia':['#ffd1c2','#9fd0c8'],
- 'Classic Chrome':['#c2a98f','#5d7c86'],'Classic Negative':['#e0a36b','#3f7d7a'],
- 'Eterna':['#9fb0a6','#4a6470'],'Pro Neg. Std':['#e8c4a8','#9a8f86'],
- 'Pro Neg. High':['#e8b89a','#7d7066'],'Provia':['#cdb89c','#6b8aa0'],
- 'Nostalgic Negative':['#e6b272','#7a5a3c'],'Acros':['#cfd2d8','#2b2e34'],
- 'Monochrome':['#c8ccd2','#26282d'],'Sepia':['#d8b483','#5a4326'],
-};
 
 //// ---------- LOAD ----------
 fetch('recipes.json').then(r=>r.json()).then(data=>{
@@ -529,20 +518,11 @@ fetch('recipes.json').then(r=>r.json()).then(data=>{
 
 //// ---------- FILTER BAR ----------
 function buildFilters(){
-  const bases=[...new Set(RECIPES.map(r=>r.base).filter(b=>b&&b.length<22))]
-    .map(b=>[b,RECIPES.filter(r=>r.base===b).length])
-    .sort((a,b)=>b[1]-a[1]).slice(0,12);
   const wrap=$('#filters');wrap.innerHTML='';
-  const mk=(label,on,fn,cls='')=>{const b=el('button','chip '+cls);b.innerHTML=label;if(on)b.classList.add('on');b.setAttribute('aria-pressed',on?'true':'false');b.onclick=fn;return b;};
-  wrap.appendChild(mk('Tout', filterState.mono==='all'&&!filterState.base&&!filterState.fav,()=>{filterState.mono='all';filterState.base=null;filterState.fav=false;buildFilters();applyFilters();}));
-  wrap.appendChild(mk('● Favoris', filterState.fav,()=>{filterState.fav=!filterState.fav;buildFilters();applyFilters();}));
+  const mk=(label,on,fn)=>{const b=el('button','chip');b.textContent=label;if(on)b.classList.add('on');b.setAttribute('aria-pressed',on?'true':'false');b.onclick=fn;return b;};
+  wrap.appendChild(mk('Favoris', filterState.fav,()=>{filterState.fav=!filterState.fav;buildFilters();applyFilters();}));
   wrap.appendChild(mk('Couleur', filterState.mono==='color',()=>{filterState.mono=filterState.mono==='color'?'all':'color';buildFilters();applyFilters();}));
-  wrap.appendChild(mk('N&amp;B', filterState.mono==='bw',()=>{filterState.mono=filterState.mono==='bw'?'all':'bw';buildFilters();applyFilters();}));
-  bases.forEach(([b,n])=>{
-    const c=BASE_COLORS[b]?BASE_COLORS[b][0]:'#9aa1b1';
-    wrap.appendChild(mk(`<span class="dot" style="background:${c}"></span>${b} <span style="opacity:.5">${n}</span>`,
-      filterState.base===b,()=>{filterState.base=filterState.base===b?null:b;buildFilters();applyFilters();},'sim'));
-  });
+  wrap.appendChild(mk('Noir & blanc', filterState.mono==='bw',()=>{filterState.mono=filterState.mono==='bw'?'all':'bw';buildFilters();applyFilters();}));
 }
 
 function applyFilters(){
@@ -550,7 +530,6 @@ function applyFilters(){
     if(filterState.fav && !favs.has(r._i)) return false;
     if(filterState.mono==='color' && r.mono) return false;
     if(filterState.mono==='bw' && !r.mono) return false;
-    if(filterState.base && r.base!==filterState.base) return false;
     return true;
   });
   rendered=0;$('#gallery').innerHTML='';
