@@ -59,7 +59,7 @@ header.top{
 }
 .logo::after{content:"";position:absolute;inset:10px;border-radius:50%;background:var(--ink)}
 img.logo::after{display:none}
-.brand h1{font-size:17px;font-weight:700;letter-spacing:.2px;margin:0;line-height:1}
+.brand h1{font-size:21px;font-weight:700;letter-spacing:-.01em;margin:0;line-height:1}
 .count{margin-left:auto;font-size:11px;color:var(--txt3);text-align:right;flex:none}
 .count b{color:var(--accent);font-weight:700}
 
@@ -127,7 +127,7 @@ img.logo::after{display:none}
 .ed-head .x{width:34px;height:34px;border-radius:var(--r-md);background:var(--panel2);display:grid;place-items:center;flex:none;transition:background .15s}
 .ed-head .x:hover{background:var(--line2)}
 .ed-head .t{min-width:0;flex:1}
-.ed-head .t h2{margin:0;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ed-head .t h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ed-head .t span{font-size:11px;color:var(--txt3)}
 .ed-head .hfav{width:34px;height:34px;border-radius:var(--r-md);background:var(--panel2);display:grid;place-items:center;flex:none;transition:background .15s}
 .ed-head .hfav:hover{background:var(--line2)}
@@ -245,10 +245,10 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 
 <div class="fabs">
   <button class="fab sec" id="fabFav" title="Favoris">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.3 8.3 1.9 4.5 5.5 4.5c2 0 3.4 1.1 4.5 2.6 1.1-1.5 2.5-2.6 4.5-2.6 3.6 0 5.2 3.8 3.5 7.2C19.5 16.4 12 21 12 21z"/></svg>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
   </button>
   <button class="fab" id="fabNew" title="Créer la vôtre">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>
   </button>
 </div>
 
@@ -256,12 +256,12 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 <div class="scrim" id="scrim"></div>
 <div class="editor" id="editor">
   <div class="ed-head">
-    <button class="x" id="edClose">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    <button class="x" id="edClose" aria-label="Fermer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
     </button>
     <div class="t"><h2 id="edName">—</h2><span id="edSub"></span></div>
-    <button class="hfav" id="edFav">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.3 8.3 1.9 4.5 5.5 4.5c2 0 3.4 1.1 4.5 2.6 1.1-1.5 2.5-2.6 4.5-2.6 3.6 0 5.2 3.8 3.5 7.2C19.5 16.4 12 21 12 21z"/></svg>
+    <button class="hfav" id="edFav" aria-label="Favori">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"></path></svg>
     </button>
   </div>
 
@@ -270,7 +270,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <canvas id="pvCanvas"></canvas>
       <div class="pv-tools">
         <label class="pv-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l5-5 4 4 3-3 4 4"/><circle cx="9" cy="8" r="1.6"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>
           Ma photo
           <input id="upload" type="file" accept="image/*" hidden>
         </label>
@@ -306,7 +306,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
   <div class="ed-foot">
     <button class="btn-reset" id="btnReset">Réinitialiser</button>
     <button class="btn-export" id="btnExport" hidden>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Exporter
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>Exporter
     </button>
     <button class="btn-src" id="btnSrc">Source ↗</button>
   </div>
@@ -315,6 +315,21 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 <div class="toast" id="toast"></div>
 
 <script>
+//// ---------- MATERIAL DESIGN ICONS (Apache 2.0) ----------
+const MI={
+  heart:'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
+  heartO:'M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z',
+  close:'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  image:'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z',
+  download:'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z',
+};
+// inline material svg
+function svgIcon(path,size){return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${path}"></path></svg>`;}
+// favorite heart that swaps filled/outline by state
+function heartSvg(on,size){return svgIcon(on?MI.heart:MI.heartO,size);}
+function setHeart(btn,on){const p=btn&&btn.querySelector('path');if(p)p.setAttribute('d',on?MI.heart:MI.heartO);}
+
 //// ---------- PREVIEW IMAGES ----------
 // Generic royalty-free photo (served alongside the app) used on cards + as default preview.
 const GENERIC_IMG='generic.jpg';
@@ -535,9 +550,7 @@ function card(r){
       <canvas class="ph" data-ri="${r._i}" width="${CARD_W}" height="${CARD_H}"></canvas>
       <span class="badge">${esc(r.base||'—')}</span>
       ${r.mono?'<span class="badge mono">N&B</span>':''}
-      <button class="fav ${fav?'on':''}" data-i="${r._i}">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="${fav?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.3 8.3 1.9 4.5 5.5 4.5c2 0 3.4 1.1 4.5 2.6 1.1-1.5 2.5-2.6 4.5-2.6 3.6 0 5.2 3.8 3.5 7.2C19.5 16.4 12 21 12 21z"/></svg>
-      </button>
+      <button class="fav ${fav?'on':''}" data-i="${r._i}" aria-label="Favori">${heartSvg(fav,16)}</button>
     </div>
     <div class="body">
       <p class="name">${esc(r.name||'Sans titre')}</p>
@@ -570,7 +583,7 @@ function esc(s){return (s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>'
 function toggleFav(i,btn){
   if(favs.has(i))favs.delete(i);else favs.add(i);
   localStorage.setItem('fuji_favs',JSON.stringify([...favs]));
-  if(btn){const on=favs.has(i);btn.classList.toggle('on',on);btn.querySelector('svg').setAttribute('fill',on?'currentColor':'none');}
+  if(btn){const on=favs.has(i);btn.classList.toggle('on',on);setHeart(btn,on);}
 }
 $('#fabFav').onclick=()=>{filterState.fav=!filterState.fav;buildFilters();applyFilters();
   toast(filterState.fav?'Favoris seulement':'Toutes les recettes');};
@@ -622,9 +635,9 @@ function closeEditor(){$('#scrim').classList.remove('show');$('#editor').classLi
 $('#edClose').onclick=closeEditor;$('#scrim').onclick=closeEditor;
 
 function syncFav(){const on=cur&&!cur._blank&&favs.has(cur._i);const b=$('#edFav');
-  b.classList.toggle('on',!!on);b.querySelector('svg').setAttribute('fill',on?'currentColor':'none');}
+  b.classList.toggle('on',!!on);setHeart(b,!!on);}
 $('#edFav').onclick=()=>{if(!cur||cur._blank)return;toggleFav(cur._i);syncFav();
-  document.querySelectorAll(`.fav[data-i="${cur._i}"]`).forEach(b=>{const on=favs.has(cur._i);b.classList.toggle('on',on);b.querySelector('svg').setAttribute('fill',on?'currentColor':'none');});};
+  document.querySelectorAll(`.fav[data-i="${cur._i}"]`).forEach(b=>{const on=favs.has(cur._i);b.classList.toggle('on',on);setHeart(b,on);});};
 
 function buildBasePick(){
   const w=$('#basepick');w.innerHTML='';
