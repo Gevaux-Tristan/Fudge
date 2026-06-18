@@ -54,14 +54,8 @@ header.top{
   background:linear-gradient(180deg,var(--bg) 62%,rgba(0,0,0,0));
 }
 .brand{display:flex;align-items:center;gap:11px;margin-bottom:13px}
-/* Branding mark — placeholder until the custom icon is dropped in.
-   To swap: replace <div class="logo"></div> with <img class="logo" src="logo.svg"> */
-.logo{
-  width:34px;height:34px;border-radius:var(--r-sm);flex:none;
-  background:var(--accent);position:relative;object-fit:cover;display:block;
-}
-.logo::after{content:"";position:absolute;inset:10px;border-radius:50%;background:var(--ink)}
-img.logo::after{display:none}
+/* Branding mark — the Fudge "F" glyph (logo.svg) on the dark header. */
+.logo{height:32px;width:auto;flex:none;display:block}
 .brand h1{font-size:21px;font-weight:700;letter-spacing:-.01em;margin:0;line-height:1}
 .count{margin-left:auto;font-size:11px;color:var(--txt3);text-align:right;flex:none}
 .count b{color:var(--accent);font-weight:700}
@@ -230,7 +224,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 <div class="app">
   <header class="top">
     <div class="brand">
-      <img class="logo" src="icon.svg" alt="Fudge" width="34" height="34">
+      <img class="logo" src="logo.svg" alt="Fudge" width="28" height="32">
       <div>
         <h1>Fudge</h1>
       </div>
