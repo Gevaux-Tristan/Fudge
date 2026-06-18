@@ -13,6 +13,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fudge">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root{
   /* Kodak — black & yellow */
@@ -33,7 +36,7 @@
 html,body{margin:0;height:100%}
 body{
   background:var(--bg); color:var(--txt);
-  font-family:Helvetica,"Helvetica Neue",Arial,sans-serif;
+  font-family:"Google Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
   font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
 }
@@ -100,7 +103,7 @@ img.logo::after{display:none}
 .fav:hover{background:rgba(0,0,0,.65);transform:scale(1.08)}
 .fav.on{color:var(--accent)}
 .card .body{padding:10px 11px 12px}
-.card .name{font-size:13px;font-weight:650;line-height:1.25;margin:0 0 3px;
+.card .name{font-size:13px;font-weight:600;line-height:1.25;margin:0 0 3px;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}
 .card .sub{font-size:11px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .empty{text-align:center;color:var(--txt3);padding:60px 20px}
@@ -152,14 +155,14 @@ img.logo::after{display:none}
 .basepick button{padding:8px 12px;border-radius:var(--r-md);background:var(--panel);border:1px solid var(--line);
   font-size:12px;color:var(--txt2);transition:border-color .15s,color .15s}
 .basepick button:hover{border-color:var(--line2);color:var(--txt)}
-.basepick button.on{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:650}
+.basepick button.on{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:600}
 .basepick button.on:hover{color:var(--ink)}
 
 /* slider */
 .sld{margin-bottom:18px}
 .sld:last-child{margin-bottom:4px}
 .sld-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
-.sld-top label{font-size:13px;font-weight:550;color:var(--txt)}
+.sld-top label{font-size:13px;font-weight:500;color:var(--txt)}
 .sld-val{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;min-width:42px;text-align:right}
 .sld-val.pos{color:var(--pos)} .sld-val.neg{color:var(--neg)} .sld-val.zero{color:var(--txt3)}
 .range{position:relative;height:26px;display:flex;align-items:center}
@@ -174,23 +177,23 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 /* segmented */
 .seg-row{margin-bottom:16px}
-.seg-row > label{font-size:13px;font-weight:550;display:block;margin-bottom:8px}
+.seg-row > label{font-size:13px;font-weight:500;display:block;margin-bottom:8px}
 .seg{display:flex;gap:5px;background:var(--panel);padding:4px;border-radius:var(--r-md);border:1px solid var(--line)}
 .seg button{flex:1;padding:8px 4px;border-radius:var(--r-sm);font-size:12px;color:var(--txt2);transition:.12s;font-weight:500}
 .seg button:hover{color:var(--txt)}
-.seg button.on{background:var(--panel2);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.3);font-weight:650}
+.seg button.on{background:var(--panel2);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.3);font-weight:600}
 .seg button.on.acc{background:var(--accent);color:var(--ink)}
 
 .wbline{font-size:13px;color:var(--txt2);background:var(--panel);border:1px solid var(--line);
   border-radius:var(--r-md);padding:11px 13px;display:flex;justify-content:space-between;align-items:center}
-.wbline b{color:var(--txt);font-weight:650}
+.wbline b{color:var(--txt);font-weight:600}
 
 .rawbox{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 14px;
   font-size:12px;color:var(--txt2);white-space:pre-wrap;line-height:1.6;font-family:ui-monospace,Menlo,monospace}
 
 .ed-foot{flex:none;display:flex;gap:10px;padding:12px 16px calc(var(--safe-b) + 14px);
   border-top:1px solid var(--line);background:var(--bg2)}
-.ed-foot button{flex:1;padding:13px;border-radius:var(--r-md);font-weight:650;font-size:14px;transition:filter .15s,background .15s}
+.ed-foot button{flex:1;padding:13px;border-radius:var(--r-md);font-weight:600;font-size:14px;transition:filter .15s,background .15s}
 .btn-reset{background:var(--panel2);border:1px solid var(--line2);color:var(--txt)}
 .btn-reset:hover{background:var(--line2)}
 .btn-src{background:var(--accent);color:var(--ink)}
