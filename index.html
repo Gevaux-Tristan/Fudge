@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Fudge</title>
-<meta name="description" content="Fudge — recettes de simulation de film Fujifilm en presets + curseurs, pour retoucher vos photos.">
+<meta name="description" content="Fudge — presets photo inspirés des pellicules argentiques classiques, à appliquer et régler sur vos photos.">
 <link rel="icon" type="image/svg+xml" href="icon.svg?v=3">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
@@ -345,11 +345,9 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 
   <div class="tabs" id="edTabs" role="tablist" aria-label="Sections de réglage"></div>
   <div class="panels" id="edPanels">
-    <section class="panel" id="panel-base" role="tabpanel" aria-label="Simulation de base"></section>
     <section class="panel" id="panel-light" role="tabpanel" aria-label="Lumière"></section>
     <section class="panel" id="panel-color" role="tabpanel" aria-label="Couleur"></section>
-    <section class="panel" id="panel-detail" role="tabpanel" aria-label="Détail"></section>
-    <section class="panel" id="panel-recipe" role="tabpanel" aria-label="Recette"></section>
+    <section class="panel" id="panel-fx" role="tabpanel" aria-label="Rendu"></section>
   </div>
 
   <div class="ed-foot">
@@ -436,63 +434,88 @@ function clamp(x,a,b){return x<a?a:x>b?b:x;}
 // mx = 3x3 channel matrix; sat/con base; lift = matte black raise;
 // split = split-tone strength with sh (shadow) / hi (highlight) colour vectors.
 const I3=[1,0,0, 0,1,0, 0,0,1];
-const SIM={
- 'Provia':{mx:I3,sat:1.00,con:1.06,lift:0,split:0},
- 'Astia':{mx:[1.03,0,-0.02, 0,1.0,0, -0.01,0,0.99],sat:0.92,con:0.96,lift:0.02,split:0.25,sh:[0,0,0.01],hi:[0.03,0.015,-0.02]},
- 'Velvia':{mx:[1.11,-0.07,-0.04, -0.04,1.09,-0.05, -0.03,-0.07,1.10],sat:1.34,con:1.15,lift:0,split:0},
- 'Classic Chrome':{mx:[0.92,0.07,0.01, 0.02,0.95,0.03, 0.02,0.05,0.93],sat:0.72,con:1.08,lift:0.045,split:0.45,sh:[-0.015,0.01,0.02],hi:[0.02,0.005,-0.015]},
- 'Classic Negative':{mx:[1.07,-0.03,-0.02, -0.03,1.0,-0.01, -0.02,0.05,1.0],sat:0.90,con:1.13,lift:0.035,split:0.62,sh:[-0.03,0.02,0.035],hi:[0.045,0.02,-0.04]},
- 'Nostalgic Negative':{mx:[1.06,0,-0.04, 0,1.0,-0.01, -0.02,0,0.95],sat:0.96,con:1.0,lift:0.045,split:0.4,sh:[0,0,0.01],hi:[0.05,0.025,-0.03]},
- 'Eterna':{mx:[0.99,0.02,0.01, 0.01,0.99,0.02, 0.02,0.03,0.98],sat:0.66,con:0.86,lift:0.065,split:0.5,sh:[-0.02,0.005,0.025],hi:[0.02,0.01,-0.01]},
- 'Pro Neg. Std':{mx:[1.01,0,-0.01, 0,1.0,0, 0,0,1.0],sat:0.85,con:0.92,lift:0.015,split:0.15,sh:[0,0,0.005],hi:[0.015,0.01,-0.01]},
- 'Pro Neg. High':{mx:[1.01,0,-0.01, 0,1.0,0, 0,0,1.0],sat:0.88,con:1.08,lift:0.01,split:0.15,sh:[0,0,0.005],hi:[0.015,0.01,-0.01]},
- 'Acros':{mono:1,con:1.13,lift:0.01,filt:[0.30,0.59,0.11]},
- 'Monochrome':{mono:1,con:1.0,lift:0.01,filt:[0.30,0.59,0.11]},
- 'Sepia':{mono:1,con:1.0,lift:0.02,filt:[0.30,0.59,0.11],tone:[0.07,-0.02,-0.20]},
-};
-const LVL={Off:0,Weak:1,Strong:2,Medium:1.5};
 
-// White balance string -> {kelvin, tint(+magenta / -green)}
-function parseWB(s){
-  if(!s) return {kelvin:5500,tint:0};
-  s=''+s;const low=s.toLowerCase();
-  let m=s.match(/(\d{3,5})\s*k\b/i)||s.match(/\bk\s*[:=]?\s*(\d{3,5})/i);
-  let kelvin=m?parseInt(m[1]):null, tint=0;
-  if(kelvin===null){
-    if(/shade/.test(low))kelvin=7500;
-    else if(/cloud/.test(low))kelvin=6500;
-    else if(/daylight|sunny|\bfine\b/.test(low))kelvin=5400;
-    else if(/incandescent|tungsten/.test(low))kelvin=3200;
-    else if(/underwater/.test(low)){kelvin=6200;tint=-0.6;}
-    else if(/fluor/.test(low)){kelvin=/3/.test(low)?5000:/2/.test(low)?4500:3900;tint=0.5;}
-    else if(/flash/.test(low))kelvin=5600;
-    else kelvin=5500; // auto / white priority / unknown -> neutral
-  }
-  return {kelvin:clamp(kelvin,2500,12000),tint};
-}
+// ---------------------------------------------------------------------------
+// PRESET LIBRARY — original film-inspired looks (LUTs), each with character.
+// Fields: temp(warmth -100..100) tint(+magenta/-green) sat con mx(3x3)
+//   split + splitS(shadow rgb) splitH(highlight rgb)  lift(matte)  grain  vig
+//   mono + filt(mono weights) + tone(mono toning rgb).  cat = badge family.
+// Inspired by documented stocks (warm portrait/consumer negatives, vivid
+// slides, motion-picture stocks, lomo/cross-process, faded vintage, B&W).
+// ---------------------------------------------------------------------------
+const PRESETS=[
+ // — Négatifs couleur (chauds, peau crémeuse) —
+ {name:'Maple 400', film:'Négatif portrait · chaud & crémeux', cat:'Négatif',
+  temp:18,tint:-4,sat:.92,con:.93,lift:.05,split:.4,splitS:[-.01,0,.02],splitH:[.04,.02,-.02],grain:.4,vig:.12},
+ {name:'Honey 200', film:'Négatif doré · nostalgique', cat:'Négatif',
+  temp:30,tint:2,sat:1.05,con:1.0,lift:.04,split:.45,splitS:[0,.005,.01],splitH:[.06,.03,-.045],grain:.5,vig:.15},
+ {name:'Sunday 400', film:'Négatif du quotidien · vif', cat:'Négatif',
+  temp:12,tint:-6,sat:1.16,con:1.05,lift:.03,split:.3,splitS:[-.02,.02,0],splitH:[.03,.02,-.02],grain:.6,vig:.12},
 
-// Pre-compute all per-recipe constants once (not per pixel).
-function buildOps(v){
-  const wb=parseWB(v.wb);
-  const t=clamp((wb.kelvin-5500)/4500,-1,1.3);          // image warmth from set-Kelvin
-  const rG=1+0.20*t+(v.wbRed||0)*0.012;
-  const gG=1-wb.tint*0.10;
-  const bG=1-0.20*t+(v.wbBlue||0)*0.012;
-  const sim=SIM[v.base]||SIM.Provia;
-  const mx=sim.mx||I3;
-  const drC={DR100:0.05,DR200:0,DR400:-0.07,Auto:-0.02}[v.dr]||0;
-  const sat=(sim.mono?0:(sim.sat||1))*(1+(v.color||0)*0.14);
-  const con=(sim.con||1)*(1+(v.clarity||0)*0.022+drC);
-  return {
-    rG,gG,bG,mx,sim,
-    sat,con,lift:sim.lift||0,
-    split:sim.split||0, sh:sim.sh||[0,0,0], hi:sim.hi||[0,0,0],
-    he:v.highlights||0, she:v.shadows||0,
-    chrome:LVL[v.colorChrome]||0, chromeB:LVL[v.colorChromeBlue]||0,
-    mono:!!sim.mono, filt:sim.filt||[0.3,0.59,0.11], tone:sim.tone||null,
-    grain:(LVL[v.grain]||0)*(v.grainSize==='Large'?1.35:1),
-    vig:0.16+(v.clarity>0?v.clarity*0.012:0),
-  };
+ // — Diapositives (saturées, contrastées) —
+ {name:'Velvet 50', film:'Diapo ultra-saturée · paysage', cat:'Diapo',
+  temp:-4,sat:1.42,con:1.2,mx:[1.10,-.06,-.04, -.05,1.10,-.05, -.03,-.07,1.10],split:.2,splitS:[-.01,0,.02],grain:.2,vig:.18},
+ {name:'Chrome 100', film:'Diapo équilibrée · propre', cat:'Diapo',
+  temp:2,sat:1.12,con:1.08,grain:.2,vig:.1},
+ {name:'Archive 64', film:'Diapo vintage · rouges riches', cat:'Diapo',
+  temp:14,sat:1.1,con:1.12,mx:[1.08,-.02,-.03, -.02,1.0,-.02, -.02,-.02,.96],split:.35,splitS:[.01,0,-.01],splitH:[.03,.01,-.03],lift:.02,grain:.35,vig:.18},
+
+ // — Cinéma —
+ {name:'Neon 800T', film:'Ciné tungstène · halation & teal', cat:'Ciné',
+  temp:-22,tint:-2,sat:.98,con:1.05,lift:.05,split:.6,splitS:[-.03,.02,.05],splitH:[.06,0,-.03],grain:.8,vig:.2},
+ {name:'Daylight 250', film:'Ciné lumière du jour · doux', cat:'Ciné',
+  temp:6,sat:.95,con:.95,lift:.06,split:.45,splitS:[-.02,.005,.02],splitH:[.03,.02,-.02],grain:.5,vig:.15},
+ {name:'Cinéma', film:'Étalonnage teal & orange', cat:'Ciné',
+  temp:8,sat:1.05,con:1.12,split:.7,splitS:[-.04,.01,.05],splitH:[.06,.03,-.05],lift:.04,grain:.3,vig:.22},
+
+ // — Lomo / expérimental —
+ {name:'Lomo Pop', film:'Lomo · saturé & vignette', cat:'Lomo',
+  temp:0,tint:-10,sat:1.5,con:1.25,lift:.02,split:.4,splitS:[-.02,.04,-.02],splitH:[.03,.04,-.04],grain:.7,vig:.5},
+ {name:'X-Pro', film:'Cross-process · couleurs folles', cat:'Lomo',
+  temp:4,tint:6,sat:1.3,con:1.3,mx:[1.05,0,-.05, -.03,1.05,-.02, .02,-.04,.95],split:.7,splitS:[-.05,.02,.04],splitH:[.06,.05,-.08],lift:.03,grain:.6,vig:.3},
+ {name:'Redscale', film:'Pellicule inversée · rouge intense', cat:'Lomo',
+  temp:40,sat:1.1,con:1.1,mx:[1.15,.05,.05, 0,.85,.05, 0,0,.5],split:.3,splitH:[.06,0,-.06],grain:.6,vig:.25},
+
+ // — Vintage / délavé —
+ {name:'Faded 78', film:'Rétro délavé · seventies', cat:'Vintage',
+  temp:16,sat:.72,con:.85,lift:.13,split:.4,splitS:[.01,.005,-.01],splitH:[.04,.02,-.03],grain:.6,vig:.15},
+ {name:'Instant', film:'Instantané · doux & froid', cat:'Vintage',
+  temp:-6,tint:-4,sat:.88,con:.9,lift:.1,split:.4,splitS:[-.02,.01,.03],splitH:[.03,.02,-.01],grain:.4,vig:.32},
+ {name:'Expired', film:'Pellicule périmée · dérive verte', cat:'Vintage',
+  temp:-2,tint:-14,sat:.85,con:.95,mx:[.98,.03,0, 0,1.04,0, .02,.02,.94],lift:.08,split:.4,splitS:[-.03,.05,-.02],grain:1.4,vig:.2},
+
+ // — Noir & blanc —
+ {name:'Mono 400', film:'N&B classique · contrasté', cat:'N&B', mono:1,con:1.15,lift:.01,grain:1.2,vig:.12},
+ {name:'Mono 5', film:'N&B reportage · souple', cat:'N&B', mono:1,con:1.05,lift:.03,grain:.9,vig:.1},
+ {name:'Mono Fine', film:'N&B grain fin · net', cat:'N&B', mono:1,con:1.08,grain:.3,vig:.08},
+ {name:'Noir', film:'N&B graphique · contraste fort', cat:'N&B', mono:1,con:1.4,grain:.7,vig:.18},
+ {name:'Sépia', film:'N&B viré sépia · chaud', cat:'N&B', mono:1,con:1.05,grain:.6,tone:[.07,-.01,-.16],vig:.15},
+ {name:'Sélénium', film:'N&B viré froid', cat:'N&B', mono:1,con:1.12,grain:.5,tone:[-.04,0,.06],vig:.12},
+
+ // — Net —
+ {name:'Neutre', film:'Couleur neutre · point de départ', cat:'Net', sat:1.0,con:1.0,grain:0,vig:0},
+];
+PRESETS.forEach(p=>{p.mono=!!p.mono;});
+// neutral user adjustments (cards render presets at their default look)
+const NEUTRAL={};
+
+// Merge a preset (P) with live user adjustments (A) into per-pixel constants.
+function buildOps(P,A){
+  A=A||NEUTRAL;
+  const warm=((P.temp||0)+(A.temperature||0))/100;
+  const grn =((P.tint||0)+(A.tint||0))/100;
+  const rG=1+0.22*warm, bG=1-0.22*warm, gG=1-0.10*grn;
+  const exp=1+(A.exposure||0)/100*0.55;
+  const sat=P.mono?0:Math.max(0,(P.sat==null?1:P.sat)*(1+(A.saturation||0)/100));
+  const con=(P.con==null?1:P.con)*(1+(A.contrast||0)/100*0.6);
+  const hi=(A.highlights||0)/100*4;
+  const sh=(A.shadows||0)/100*4;
+  const lift=clamp((P.lift||0)+(A.fade||0)/100*0.45,0,0.7);
+  const grain=clamp((P.grain||0)+(A.grain||0)/100*2,0,3);
+  const vig=clamp((P.vig||0)+(A.vignette||0)/100*0.55,0,0.85);
+  return {rG,gG,bG,exp,sat,con,hi,sh,lift,grain,vig,
+    split:P.split||0, splitS:P.splitS||[0,0,0], splitH:P.splitH||[0,0,0],
+    mx:P.mx||I3, mono:!!P.mono, filt:P.filt||[0.30,0.59,0.11], tone:P.tone||null};
 }
 
 // Cover-draw an image into a w×h context (object-fit: cover).
@@ -502,22 +525,22 @@ function drawCover(ctx,img,w,h){
   ctx.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);
 }
 
-// Render a recipe onto a canvas at w×h from a source image.
-function renderRecipe(src,v,canvas,w,h){
+// Render a preset (+ live adjustments) onto a canvas at w×h from a source image.
+function renderRecipe(src,P,A,canvas,w,h){
   canvas.width=w;canvas.height=h;
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   if(!src||!(src.naturalWidth||src.width)){ctx.fillStyle='#151515';ctx.fillRect(0,0,w,h);return;}
   drawCover(ctx,src,w,h);
   const id=ctx.getImageData(0,0,w,h),d=id.data;
-  const O=buildOps(v);
+  const O=buildOps(P,A);
   const mx=O.mx, cx=w/2, cy=h/2, maxd=Math.sqrt(cx*cx+cy*cy);
   let p=0;
   for(let y=0;y<h;y++){
     for(let x=0;x<w;x++,p+=4){
       let r=d[p]/255, g=d[p+1]/255, b=d[p+2]/255;
-      // 1. white balance
-      r*=O.rG; g*=O.gG; b*=O.bG;
-      // 2. simulation colour matrix
+      // 1. exposure + white balance
+      r*=O.rG*O.exp; g*=O.gG*O.exp; b*=O.bG*O.exp;
+      // 2. film colour matrix
       let nr=r*mx[0]+g*mx[1]+b*mx[2];
       let ng=r*mx[3]+g*mx[4]+b*mx[5];
       let nb=r*mx[6]+g*mx[7]+b*mx[8];
@@ -525,25 +548,18 @@ function renderRecipe(src,v,canvas,w,h){
       let lum=0.299*r+0.587*g+0.114*b;
       // 3. saturation
       r=lum+(r-lum)*O.sat; g=lum+(g-lum)*O.sat; b=lum+(b-lum)*O.sat;
-      // 3b. colour chrome (deepen already-saturated colours)
-      if(O.chrome){
-        const mxc=r>g?(r>b?r:b):(g>b?g:b), mnc=r<g?(r<b?r:b):(g<b?g:b), chroma=mxc-mnc;
-        const boost=1+O.chrome*0.12*chroma;
-        r=lum+(r-lum)*boost; g=lum+(g-lum)*boost; b=lum+(b-lum)*boost;
-      }
-      if(O.chromeB && b>r && b>g){const boost=1+O.chromeB*0.14*(b-((r+g)/2));b=lum+(b-lum)*boost;}
-      // 4. split-tone
+      // 4. split-tone (shadows / highlights)
       if(O.split){
         const sF=lum<0.5?(0.5-lum)*2:0, hF=lum>0.5?(lum-0.5)*2:0, sp=O.split;
-        r+=(O.sh[0]*sF+O.hi[0]*hF)*sp; g+=(O.sh[1]*sF+O.hi[1]*hF)*sp; b+=(O.sh[2]*sF+O.hi[2]*hF)*sp;
+        r+=(O.splitS[0]*sF+O.splitH[0]*hF)*sp; g+=(O.splitS[1]*sF+O.splitH[1]*hF)*sp; b+=(O.splitS[2]*sF+O.splitH[2]*hF)*sp;
       }
       // 5. contrast (pivot 0.5)
       r=(r-0.5)*O.con+0.5; g=(g-0.5)*O.con+0.5; b=(b-0.5)*O.con+0.5;
       // 6. highlight / shadow tone
       lum=0.299*r+0.587*g+0.114*b;
-      if(O.he&&lum>0.45){const f=(lum-0.45)/0.55*O.he*0.028;r+=f;g+=f;b+=f;}
-      if(O.she&&lum<0.55){const f=(0.55-lum)/0.55*O.she*0.028;r-=f;g-=f;b-=f;}
-      // 7. matte lift
+      if(O.hi&&lum>0.45){const f=(lum-0.45)/0.55*O.hi*0.028;r+=f;g+=f;b+=f;}
+      if(O.sh&&lum<0.55){const f=(0.55-lum)/0.55*O.sh*0.028;r-=f;g-=f;b-=f;}
+      // 7. matte / fade
       if(O.lift){const L=O.lift;r=L+r*(1-L);g=L+g*(1-L);b=L+b*(1-L);}
       // 8. mono + toning
       if(O.mono){
@@ -577,13 +593,9 @@ const $=s=>document.querySelector(s);
 const el=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;};
 
 //// ---------- LOAD ----------
-fetch('recipes.json').then(r=>r.json()).then(data=>{
-  RECIPES=data.map((r,i)=>{r._i=i;return r;});
-  buildFilters();
-  applyFilters();
-}).catch(e=>{
-  $('#gallery').innerHTML='<div class="empty">Impossible de charger recipes.json<br><small>'+e+'</small></div>';
-});
+RECIPES=PRESETS.map((p,i)=>{p._i=i;return p;});
+buildFilters();
+applyFilters();
 
 //// ---------- FILTER BAR ----------
 function buildFilters(){
@@ -612,7 +624,7 @@ function pageSize(){return VIEW==='compact'?36:12;}
 function card(r){
   const c=el('div','card');
   c.tabIndex=0;c.setAttribute('role','button');
-  c.setAttribute('aria-label',`Ouvrir la recette ${r.name||'sans titre'} · ${r.base||''}`);
+  c.setAttribute('aria-label',`Ouvrir le preset ${r.name||''} · ${r.cat||''}`);
   c.onclick=()=>openEditor(r);
   c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openEditor(r);}};
   const fav=favs.has(r._i);
@@ -620,25 +632,25 @@ function card(r){
   c.innerHTML=`
     <div class="thumb">
       <canvas class="ph" data-ri="${r._i}" width="${w}" height="${h}" aria-hidden="true"></canvas>
-      <span class="badge">${esc(r.base||'—')}</span>
+      <span class="badge">${esc(r.cat||'')}</span>
       ${r.mono?'<span class="badge mono">N&B</span>':''}
       <button class="fav ${fav?'on':''}" data-i="${r._i}" aria-label="Ajouter aux favoris" aria-pressed="${fav}">${heartSvg(fav,16)}</button>
     </div>
     <div class="body">
-      <div class="lbase">${esc(r.base||'')}${r.mono?' · N&B':''}</div>
-      <p class="name">${esc(r.name||'Sans titre')}</p>
-      <div class="sub">${esc(r.creator||'—')} · ${esc(r.camera||r.sensor||'')}</div>
+      <div class="lbase">${esc(r.cat||'')}</div>
+      <p class="name">${esc(r.name||'')}</p>
+      <div class="sub">${esc(r.film||'')}</div>
     </div>`;
   c.querySelector('.fav').onclick=(e)=>{e.stopPropagation();toggleFav(r._i,e.currentTarget);};
   const cv=c.querySelector('canvas');
-  if(baseReady)renderRecipe(baseImg,recipeToVals(r),cv,w,h);
+  if(baseReady)renderRecipe(baseImg,r,NEUTRAL,cv,w,h);
   return c;
 }
 // (Re)paint every card thumbnail (after the image loads, or on view change).
 function rerenderCards(){
   if(!baseReady)return;const [w,h]=cardDims();
   document.querySelectorAll('.thumb canvas[data-ri]').forEach(cv=>{
-    const r=RECIPES[+cv.dataset.ri]; if(r)renderRecipe(baseImg,recipeToVals(r),cv,w,h);
+    const r=RECIPES[+cv.dataset.ri]; if(r)renderRecipe(baseImg,r,NEUTRAL,cv,w,h);
   });
 }
 function renderMore(){
@@ -684,37 +696,26 @@ $('#fabFav').onclick=()=>{filterState.fav=!filterState.fav;buildFilters();applyF
   toast(filterState.fav?'Favoris seulement':'Toutes les recettes');};
 
 //// ---------- EDITOR ----------
-const NUM_SLIDERS=[
-  {k:'highlights',label:'Hautes lumières',min:-2,max:4,step:.5},
-  {k:'shadows',label:'Ombres',min:-2,max:4,step:.5},
-  {k:'color',label:'Couleur (saturation)',min:-4,max:4,step:1},
-  {k:'sharpness',label:'Netteté',min:-4,max:4,step:1},
-  {k:'clarity',label:'Clarté',min:-5,max:5,step:1},
-  {k:'noiseReduction',label:'Réduction du bruit',min:-4,max:4,step:1},
-  {k:'wbRed',label:'WB · Rouge',min:-9,max:9,step:1},
-  {k:'wbBlue',label:'WB · Bleu',min:-9,max:9,step:1},
+// Universal photo adjustments layered on top of the chosen preset (neutral = 0).
+const ADJ=[
+  {k:'exposure',   label:'Exposition',     min:-100,max:100,step:1},
+  {k:'contrast',   label:'Contraste',      min:-100,max:100,step:1},
+  {k:'highlights', label:'Hautes lumières',min:-100,max:100,step:1},
+  {k:'shadows',    label:'Ombres',         min:-100,max:100,step:1},
+  {k:'saturation', label:'Saturation',     min:-100,max:100,step:1},
+  {k:'temperature',label:'Température',     min:-100,max:100,step:1},
+  {k:'tint',       label:'Teinte',         min:-100,max:100,step:1},
+  {k:'grain',      label:'Grain',          min:0,   max:100,step:1},
+  {k:'vignette',   label:'Vignettage',     min:0,   max:100,step:1},
+  {k:'fade',       label:'Estompé',        min:0,   max:100,step:1},
 ];
-const BASES=['Provia','Astia','Velvia','Classic Chrome','Classic Negative','Nostalgic Negative','Eterna','Pro Neg. Std','Pro Neg. High','Acros','Monochrome','Sepia'];
-const LV=['Off','Weak','Strong'];const LVfr={Off:'Désactivé',Weak:'Faible',Strong:'Fort',Medium:'Moyen'};
-function normLv(v){if(!v)return 'Off';v=(''+v);if(/strong/i.test(v))return 'Strong';if(/weak/i.test(v))return 'Weak';if(/medium|std/i.test(v))return 'Medium';if(/off|none/i.test(v))return 'Off';return 'Weak';}
+function neutralAdj(){const o={};ADJ.forEach(a=>o[a.k]=0);return o;}
 
-function recipeToVals(r){
-  return {
-    base:r.base&&BASES.includes(r.base)?r.base:(r.mono?'Acros':'Provia'),
-    mono:!!r.mono,
-    highlights:def(r.highlights,0),shadows:def(r.shadows,0),color:def(r.color,0),
-    sharpness:def(r.sharpness,0),clarity:def(r.clarity,0),noiseReduction:def(r.noiseReduction,0),
-    wbRed:def(r.wbRed,0),wbBlue:def(r.wbBlue,0),wb:r.whiteBalance||'',
-    grain:normLv(r.grain),grainSize:(/large/i.test(r.grainSize||'')?'Large':'Small'),
-    colorChrome:normLv(r.colorChrome),colorChromeBlue:normLv(r.colorChromeBlue),
-    dr:r.dynamicRange&&/100|200|400|auto/i.test(r.dynamicRange)?r.dynamicRange.replace(/dr/i,'DR').replace('DRAuto','Auto'):'Auto',
-  };
-}
-function openEditor(r,blank){
+function openEditor(r){
   cur=r;
-  vals=recipeToVals(r);
-  $('#edName').textContent=blank?'Nouvelle recette':(r.name||'Sans titre');
-  $('#edSub').textContent=blank?'Partez des réglages ci-dessous':`${r.creator||'—'} · ${r.sensor||r.camera||''}`;
+  vals=neutralAdj();
+  $('#edName').textContent=r.name||'';
+  $('#edSub').textContent=r.film||'';
   syncFav();
   buildEditorPanels();
   paint();
@@ -726,7 +727,6 @@ function openEditor(r,blank){
   $('#edClose').focus();
   setTimeout(()=>{if(!$('#editor').contains(document.activeElement))$('#edClose').focus();},60);
 }
-function def(v,d){return (v===null||v===undefined||isNaN(v))?d:v;}
 let lastFocused=null;
 function bgInert(on){['.app','.fabs'].forEach(s=>{const n=document.querySelector(s);if(n){if(on)n.setAttribute('inert','');else n.removeAttribute('inert');}});}
 function closeEditor(){$('#scrim').classList.remove('show');$('#editor').classList.remove('open');
@@ -735,19 +735,17 @@ function closeEditor(){$('#scrim').classList.remove('show');$('#editor').classLi
   if(lastFocused&&lastFocused.focus){lastFocused.focus();}lastFocused=null;}
 $('#edClose').onclick=closeEditor;$('#scrim').onclick=closeEditor;
 
-function syncFav(){const on=cur&&!cur._blank&&favs.has(cur._i);const b=$('#edFav');
+function syncFav(){const on=cur&&favs.has(cur._i);const b=$('#edFav');
   b.classList.toggle('on',!!on);setHeart(b,!!on);}
-$('#edFav').onclick=()=>{if(!cur||cur._blank)return;toggleFav(cur._i);syncFav();
+$('#edFav').onclick=()=>{if(!cur)return;toggleFav(cur._i);syncFav();
   document.querySelectorAll(`.fav[data-i="${cur._i}"]`).forEach(b=>{const on=favs.has(cur._i);b.classList.toggle('on',on);setHeart(b,on);});};
 
 //// ---------- EDITOR PANELS (tabs + horizontal swipe) ----------
-const SLIDER_BY_K=Object.fromEntries(NUM_SLIDERS.map(s=>[s.k,s]));
+const SLIDER_BY_K=Object.fromEntries(ADJ.map(s=>[s.k,s]));
 const ED_PANELS=[
-  {id:'base',  label:'Base'},
-  {id:'light', label:'Lumière', sliders:['highlights','shadows','clarity'], segs:['dr']},
-  {id:'color', label:'Couleur', sliders:['color','wbRed','wbBlue'], segs:['chrome','chromeBlue']},
-  {id:'detail',label:'Détail',  sliders:['sharpness','noiseReduction'], segs:['grain','grainSize']},
-  {id:'recipe',label:'Recette'},
+  {id:'light', label:'Lumière', sliders:['exposure','contrast','highlights','shadows']},
+  {id:'color', label:'Couleur', sliders:['saturation','temperature','tint']},
+  {id:'fx',    label:'Rendu',   sliders:['grain','vignette','fade']},
 ];
 let curTab=0;
 
@@ -760,40 +758,10 @@ function makeSlider(s){
   inp.addEventListener('input',()=>{vals[s.k]=parseFloat(inp.value);updSlider(s);paintLook();});
   return row;
 }
-function makeSeg(key){
-  if(key==='dr')        return seg('Plage dynamique',['DR100','DR200','DR400','Auto'],vals.dr,v=>{vals.dr=v;fillPanel('light');paintLook();},true);
-  if(key==='grain')     return segLv('Grain',vals.grain,v=>{vals.grain=v;fillPanel('detail');paintLook();});
-  if(key==='grainSize') return vals.grain!=='Off'?seg('Taille du grain',['Small','Large'],vals.grainSize,v=>{vals.grainSize=v;fillPanel('detail');paintLook();}):null;
-  if(key==='chrome')    return vals.mono?null:segLv('Color Chrome Effect',vals.colorChrome,v=>{vals.colorChrome=v;fillPanel('color');paintLook();});
-  if(key==='chromeBlue')return vals.mono?null:segLv('Color Chrome Blue',vals.colorChromeBlue,v=>{vals.colorChromeBlue=v;fillPanel('color');paintLook();});
-  return null;
-}
-function basePickEl(){
-  const w=el('div','basepick');w.setAttribute('role','radiogroup');w.setAttribute('aria-label','Simulation de base');w.setAttribute('data-rg','base');
-  BASES.forEach(b=>{const btn=el('button');btn.textContent=b;const on=vals.base===b;if(on)btn.classList.add('on');
-    btn.setAttribute('role','radio');btn.setAttribute('aria-checked',on?'true':'false');btn.setAttribute('data-rv',b);
-    btn.onclick=()=>{vals.base=b;vals.mono=/acros|mono|sepia/i.test(b);fillPanel('base');fillPanel('color');paint();};w.appendChild(btn);});
-  return w;
-}
-function recipeEl(){
-  const f=document.createDocumentFragment();
-  const wb=el('div','wbline');wb.innerHTML=`<span>Balance des blancs</span><b id="wbVal">${esc(wbText())}</b>`;f.appendChild(wb);
-  if(cur&&!cur._blank){
-    const h=el('div','sec-h');h.innerHTML='Recette d\'origine <span class="ln"></span>';f.appendChild(h);
-    const rb=el('div','rawbox');rb.id='rawBox';rb.textContent=(cur.raw||'').trim()||'—';f.appendChild(rb);
-  }
-  return f;
-}
 function fillPanel(id){
   const cfg=ED_PANELS.find(p=>p.id===id);const host=document.getElementById('panel-'+id);
   host.innerHTML='';
-  if(id==='base')        host.appendChild(basePickEl());
-  else if(id==='recipe') host.appendChild(recipeEl());
-  else{
-    (cfg.sliders||[]).forEach(k=>host.appendChild(makeSlider(SLIDER_BY_K[k])));
-    (cfg.segs||[]).forEach(key=>{const e=makeSeg(key);if(e)host.appendChild(e);});
-  }
-  host.querySelectorAll('[role=radiogroup]').forEach(wireRadios);
+  (cfg.sliders||[]).forEach(k=>host.appendChild(makeSlider(SLIDER_BY_K[k])));
   (cfg.sliders||[]).forEach(k=>updSlider(SLIDER_BY_K[k]));
 }
 function buildTabs(){
@@ -840,43 +808,22 @@ function updSlider(s){
   else{f.style.left=pct+'%';f.style.width=(mid-pct)+'%';f.style.background='var(--neg)';}
   $('#i_'+s.k).parentNode.querySelector('.midmark').style.left=mid+'%';
 }
-function seg(label,opts,val,fn,acc){
-  const row=el('div','seg-row');row.innerHTML=`<label>${label}</label>`;
-  const s=el('div','seg');s.setAttribute('role','radiogroup');s.setAttribute('aria-label',label);s.setAttribute('data-rg',label);
-  opts.forEach(o=>{const b=el('button');b.textContent=o;const on=o===val;if(on){b.classList.add('on');if(acc)b.classList.add('acc');}
-    b.setAttribute('role','radio');b.setAttribute('aria-checked',on?'true':'false');b.setAttribute('data-rv',o);b.onclick=()=>fn(o);s.appendChild(b);});
-  row.appendChild(s);return row;
-}
-function segLv(label,val,fn){
-  const row=el('div','seg-row');row.innerHTML=`<label>${label}</label>`;
-  const s=el('div','seg');s.setAttribute('role','radiogroup');s.setAttribute('aria-label',label);s.setAttribute('data-rg',label);
-  LV.forEach(o=>{const b=el('button');b.textContent=LVfr[o];const on=o===val;if(on)b.classList.add('on');
-    b.setAttribute('role','radio');b.setAttribute('aria-checked',on?'true':'false');b.setAttribute('data-rv',o);b.onclick=()=>fn(o);s.appendChild(b);});
-  row.appendChild(s);return row;
-}
-
 //// ---------- EDITOR PREVIEW (canvas, full film engine) ----------
 const pvCanvas=$('#pvCanvas');
-function paint(){paintPreview();syncWbReadout();$('#btnExport').hidden=!userImg;}
-function syncWbReadout(){const wv=$('#wbVal');if(wv)wv.textContent=wbText();}
+function paint(){paintPreview();$('#btnExport').hidden=!userImg;}
 let pvScheduled=false;
 function paintPreview(){
+  if(!cur)return;
   if(pvScheduled)return;pvScheduled=true;
   requestAnimationFrame(()=>{pvScheduled=false;
     // render at the source photo's own aspect ratio so the whole image shows (contain)
     const src=userImg||baseImg;
     let w=src.naturalWidth||3, h=src.naturalHeight||2, m=Math.max(w,h), cap=1100;
     if(m>cap){const s=cap/m;w=Math.round(w*s);h=Math.round(h*s);}
-    renderRecipe(src, vals, pvCanvas, w, h);
-    syncWbReadout();});
+    renderRecipe(src, cur, vals, pvCanvas, w, h);});
 }
-// slider/segment handlers call paintLook(); keep the name, route to the canvas render.
+// slider handlers call paintLook(); keep the name, route to the canvas render.
 const paintLook=paintPreview;
-function wbText(){
-  let t=cur&&cur.whiteBalance?cur.whiteBalance:'Auto';
-  let sh=[];if(vals.wbRed)sh.push('R'+(vals.wbRed>0?'+':'')+vals.wbRed);if(vals.wbBlue)sh.push('B'+(vals.wbBlue>0?'+':'')+vals.wbBlue);
-  return t+(sh.length?'  ('+sh.join(' ')+')':'');
-}
 
 $('#upload').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;const rd=new FileReader();
@@ -929,7 +876,7 @@ $('#camShutter').onclick=shootCam;
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#cam').hidden)closeCam();});
 
 //// foot buttons
-$('#btnReset').onclick=()=>{if(cur)openEditor(cur,cur._blank);toast('Réglages réinitialisés');};
+$('#btnReset').onclick=()=>{if(cur){vals=neutralAdj();ED_PANELS.forEach(p=>fillPanel(p.id));paint();}toast('Réglages réinitialisés');};
 
 //// EXPORT (bake the current look into the uploaded photo)
 function slugify(s){return (s||'recette').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
@@ -938,7 +885,7 @@ function uniqueName(){
   const d=new Date();const p=n=>String(n).padStart(2,'0');
   const stamp=`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
   const rnd=Math.floor(1000+ (Date.now()%9000));
-  return `fuji_${slugify(cur&&cur.name)}_${slugify(vals.base)}_${stamp}-${rnd}.jpg`;
+  return `fudge_${slugify(cur&&cur.name)}_${stamp}-${rnd}.jpg`;
 }
 async function exportImage(){
   if(!userImg)return;
@@ -947,7 +894,7 @@ async function exportImage(){
     let w=userImg.naturalWidth||1200,h=userImg.naturalHeight||800;
     const maxW=2600;if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
     const cv=document.createElement('canvas');
-    renderRecipe(userImg, vals, cv, w, h);   // full film engine, native resolution
+    renderRecipe(userImg, cur, vals, cv, w, h);   // full film engine, native resolution
     const name=uniqueName();
     await new Promise(res=>cv.toBlob(b=>{
       if(!b){toast('Export impossible');return res();}
@@ -961,8 +908,8 @@ async function exportImage(){
 }
 $('#btnExport').onclick=exportImage;
 
-//// new recipe
-$('#fabNew').onclick=()=>{openEditor({_blank:true,name:'Nouvelle recette',base:'Provia',mono:false,raw:''},true);};
+//// neutral starting point
+$('#fabNew').onclick=()=>{openEditor(PRESETS.find(p=>p.name==='Neutre')||RECIPES[0]);};
 
 //// toast
 let tT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),1800);}
