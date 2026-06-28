@@ -19,7 +19,9 @@ mono-fichier (`index.html`, sans dépendance, sans build).
   Filtres Favoris / Couleur / Noir & blanc ; affichage compact / grand / liste + « Charger plus ».
 - **Éditeur (façon VSCO)** : aperçu plein cadre de votre photo, **bandeau de presets** dont chaque
   vignette montre le look appliqué à *votre* photo (tap pour changer de look, les réglages sont
-  conservés), **curseur d'intensité** du look, et **réglages universels** en onglets (Lumière :
+  conservés), **recadrage** (bouton « Recadrer » → boîte ajustable + chips de ratio : Libre, Original,
+  1:1, 4:5, 5:4, 3:2, 2:3, 16:9, 9:16, grille des tiers), **curseur d'intensité** du look, et
+  **réglages universels** en onglets (Lumière :
   exposition, contraste, hautes lumières, ombres ; Couleur : saturation, température, teinte ;
   Rendu : intensité, grain, vignettage, estompé). Export → `fotn_<preset>_<horodatage>-<id>.jpg`.
 

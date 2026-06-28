@@ -30,6 +30,9 @@ Preset card · filter chip · **editor preset strip** (VSCO-style row of 56px th
 ## Capture
 No custom viewfinder — the camera FAB opens the **native OS camera** via `<input type="file" accept="image/*" capture="environment">` (best quality, native aspect, correct orientation). Import uses the same pattern without `capture`. The captured/imported photo opens straight into the editor.
 
+## Crop
+"Recadrer" overlays the preview with a draggable/resizable box (corner handles + move), a rule-of-thirds grid, an outside dim, and a ratio chip row (Libre · Original · 1:1 · 4:5 · 5:4 · 3:2 · 2:3 · 16:9 · 9:16) with apply/cancel. The crop is stored normalized to the image and applied in `renderRecipe` (`opts.crop` source-rect) so preview + export match. White stroke/handles on the photo; selected ratio = white-filled chip.
+
 ## Motion
 150–340ms, ease-out curves. Editor slides in (sheet on mobile, drawer ≥880px). Preview re-renders on `requestAnimationFrame`. Full `prefers-reduced-motion: reduce` fallback (transitions/animations collapsed).
 

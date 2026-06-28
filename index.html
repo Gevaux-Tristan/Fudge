@@ -167,6 +167,36 @@ header.top{
 .pv-btn{font-size:12px;padding:7px 11px;border-radius:var(--r-md);background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
   color:#fff;display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.16);transition:background .15s,border-color .15s}
 .pv-btn:hover{background:rgba(0,0,0,.7);border-color:rgba(255,255,255,.3)}
+.preview.cropping .pv-tools{display:none}
+
+/* crop tool — ratio chips + adjustable box with rule-of-thirds */
+.crop{position:absolute;inset:0;z-index:6;touch-action:none}
+.crop[hidden]{display:none}
+.crop-box{position:absolute;box-sizing:border-box;border:1px solid rgba(255,255,255,.95);
+  box-shadow:0 0 0 9999px rgba(0,0,0,.55);cursor:move}
+.crop-box::before,.crop-box::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.32}
+.crop-box::before{background:
+  linear-gradient(90deg,transparent calc(33.33% - .5px),#fff calc(33.33% - .5px),#fff calc(33.33% + .5px),transparent calc(33.33% + .5px)),
+  linear-gradient(90deg,transparent calc(66.66% - .5px),#fff calc(66.66% - .5px),#fff calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+.crop-box::after{background:
+  linear-gradient(0deg,transparent calc(33.33% - .5px),#fff calc(33.33% - .5px),#fff calc(33.33% + .5px),transparent calc(33.33% + .5px)),
+  linear-gradient(0deg,transparent calc(66.66% - .5px),#fff calc(66.66% - .5px),#fff calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+.crop-h{position:absolute;width:30px;height:30px;z-index:2}
+.crop-h::before{content:"";position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:1px}
+.crop-h.tl{left:-15px;top:-15px}.crop-h.tl::before{left:0;top:0;border-right:none;border-bottom:none}
+.crop-h.tr{right:-15px;top:-15px}.crop-h.tr::before{right:0;top:0;border-left:none;border-bottom:none}
+.crop-h.bl{left:-15px;bottom:-15px}.crop-h.bl::before{left:0;bottom:0;border-right:none;border-top:none}
+.crop-h.br{right:-15px;bottom:-15px}.crop-h.br::before{right:0;bottom:0;border-left:none;border-top:none}
+.crop-bar{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;gap:9px;
+  padding:10px 12px calc(var(--safe-b)/2 + 10px);background:linear-gradient(0deg,rgba(0,0,0,.65),transparent)}
+.crop-ratios{display:flex;gap:7px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none;-ms-overflow-style:none}
+.crop-ratios::-webkit-scrollbar{display:none}
+.crop-rchip{flex:none;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;
+  color:#fff;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2)}
+.crop-rchip.on{background:#fff;color:var(--ink);border-color:#fff}
+.crop-ic{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;color:#fff;
+  background:rgba(0,0,0,.45);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2)}
+.crop-ic.ok{background:#fff;color:var(--ink);border-color:#fff}
 
 /* section tabs */
 .tabs{display:flex;gap:4px;overflow-x:auto;flex:none;padding:9px 12px;border-bottom:1px solid var(--line);
@@ -343,6 +373,28 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
         Ma photo
         <input id="upload" type="file" accept="image/*" hidden>
       </label>
+      <button class="pv-btn" id="btnCrop">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7zm10-2h2V7c0-1.1-.9-2-2-2H9v2h8v8z"></path></svg>
+        Recadrer
+      </button>
+    </div>
+    <!-- crop overlay -->
+    <div class="crop" id="crop" hidden>
+      <div class="crop-box" id="cropBox">
+        <span class="crop-h tl" data-c="tl"></span>
+        <span class="crop-h tr" data-c="tr"></span>
+        <span class="crop-h bl" data-c="bl"></span>
+        <span class="crop-h br" data-c="br"></span>
+      </div>
+      <div class="crop-bar">
+        <button class="crop-ic" id="cropCancel" aria-label="Annuler le recadrage">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+        <div class="crop-ratios" id="cropRatios" role="radiogroup" aria-label="Format de recadrage"></div>
+        <button class="crop-ic ok" id="cropApply" aria-label="Appliquer le recadrage">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -529,7 +581,8 @@ function renderRecipe(src,P,A,canvas,w,h,opts){
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   const ready=src&&(src.naturalWidth||src.videoWidth||src.width);
   if(!ready){ctx.fillStyle='#151515';ctx.fillRect(0,0,w,h);return;}
-  if(opts&&opts.mirror){ctx.save();ctx.translate(w,0);ctx.scale(-1,1);drawCover(ctx,src,w,h);ctx.restore();}
+  if(opts&&opts.crop){const c=opts.crop;ctx.drawImage(src,c.sx,c.sy,c.sw,c.sh,0,0,w,h);}
+  else if(opts&&opts.mirror){ctx.save();ctx.translate(w,0);ctx.scale(-1,1);drawCover(ctx,src,w,h);ctx.restore();}
   else drawCover(ctx,src,w,h);
   const id=ctx.getImageData(0,0,w,h),d=id.data;
   const O=buildOps(P,A);
@@ -588,6 +641,8 @@ let VIEW=['compact','large','list'].includes(localStorage.getItem('fudge_view'))
 let cur=null;            // recipe being edited
 let vals={};             // live control values
 let userImg=null;        // uploaded image data url
+let cropN=null;          // applied crop {x,y,w,h} normalised to the image, or null = full
+let cropMode=false, cropDraft=null, cropARn=null, cropARkey='free';
 const favs=new Set(JSON.parse(localStorage.getItem('fuji_favs')||'[]'));
 const filterState={mono:'all', fav:false};
 
@@ -717,7 +772,7 @@ function neutralAdj(){const o={};ADJ.forEach(a=>o[a.k]=(a.def==null?0:a.def));re
 let lastPreset=null;        // last look opened — reused when capturing/importing a photo
 function openEditor(r){
   cur=r;lastPreset=r;
-  vals=neutralAdj();
+  vals=neutralAdj();cropN=null;
   $('#edName').textContent=r.name||'';
   $('#edSub').textContent=r.film||'';
   syncFav();
@@ -734,7 +789,7 @@ function openEditor(r){
 }
 let lastFocused=null;
 function bgInert(on){['.app','.fabs'].forEach(s=>{const n=document.querySelector(s);if(n){if(on)n.setAttribute('inert','');else n.removeAttribute('inert');}});}
-function closeEditor(){$('#scrim').classList.remove('show');$('#editor').classList.remove('open');
+function closeEditor(){if(cropMode)exitCrop();$('#scrim').classList.remove('show');$('#editor').classList.remove('open');
   document.body.style.overflow='';cur=null;
   bgInert(false);
   if(lastFocused&&lastFocused.focus){lastFocused.focus();}lastFocused=null;}
@@ -865,11 +920,15 @@ function paintPreview(){
   if(!cur)return;
   if(pvScheduled)return;pvScheduled=true;
   requestAnimationFrame(()=>{pvScheduled=false;
-    // render at the source photo's own aspect ratio so the whole image shows (contain)
+    // render the (optionally cropped) region at its own aspect so it shows whole (contain)
     const src=userImg||baseImg;
-    let w=src.naturalWidth||3, h=src.naturalHeight||2, m=Math.max(w,h), cap=1100;
-    if(m>cap){const s=cap/m;w=Math.round(w*s);h=Math.round(h*s);}
-    renderRecipe(src, cur, vals, pvCanvas, w, h);});
+    const IW=src.naturalWidth||src.width||3, IH=src.naturalHeight||src.height||2;
+    const reg=(cropN&&!cropMode)
+      ? {sx:cropN.x*IW,sy:cropN.y*IH,sw:cropN.w*IW,sh:cropN.h*IH}
+      : {sx:0,sy:0,sw:IW,sh:IH};
+    let w=reg.sw, h=reg.sh, m=Math.max(w,h), cap=1100;
+    if(m>cap){const s=cap/m;w*=s;h*=s;}
+    renderRecipe(src, cur, vals, pvCanvas, Math.round(w), Math.round(h), {crop:reg});});
 }
 // slider handlers call paintLook(); keep the name, route to the canvas render.
 const paintLook=paintPreview;
@@ -878,8 +937,8 @@ const paintLook=paintPreview;
 function loadPhotoFile(f){
   if(!f)return;const rd=new FileReader();
   rd.onload=()=>{const im=new Image();im.onload=()=>{
-    userImg=im;
-    if($('#editor').classList.contains('open')){buildEditStrip();paint();}
+    userImg=im;cropN=null;                    // new photo → drop any previous crop
+    if($('#editor').classList.contains('open')){if(cropMode)cancelCrop();buildEditStrip();paint();}
     else openEditor(lastPreset||FILTERED[0]||RECIPES[0]);
   };im.src=rd.result;};
   rd.readAsDataURL(f);
@@ -887,6 +946,112 @@ function loadPhotoFile(f){
 // reset value so re-picking the same file still fires "change"
 $('#upload').addEventListener('change',e=>{loadPhotoFile(e.target.files[0]);e.target.value='';});
 $('#camInput').addEventListener('change',e=>{loadPhotoFile(e.target.files[0]);e.target.value='';});
+
+//// ---------- CROP (ratio chips + adjustable box) ----------
+const CROP_RATIOS=[
+  {k:'free',label:'Libre',  r:null},
+  {k:'orig',label:'Original',r:'orig'},
+  {k:'1:1', label:'1:1',    r:1},
+  {k:'4:5', label:'4:5',    r:4/5},
+  {k:'5:4', label:'5:4',    r:5/4},
+  {k:'3:2', label:'3:2',    r:3/2},
+  {k:'2:3', label:'2:3',    r:2/3},
+  {k:'16:9',label:'16:9',   r:16/9},
+  {k:'9:16',label:'9:16',   r:9/16},
+];
+function cropSrcWH(){const s=userImg||baseImg;return [s.naturalWidth||s.width||3, s.naturalHeight||s.height||2];}
+// normalised aspect (w/h in 0..1 image space) for an output ratio R = outW/outH
+function arnFor(r){if(r==null)return null;const [IW,IH]=cropSrcWH();const R=(r==='orig')?(IW/IH):r;return R*IH/IW;}
+// displayed image rect inside #preview (object-fit: contain)
+function imgDispRect(){
+  const pv=$('#preview').getBoundingClientRect();const [IW,IH]=cropSrcWH();
+  const s=Math.min(pv.width/IW,pv.height/IH),dW=IW*s,dH=IH*s;
+  return {left:(pv.width-dW)/2,top:(pv.height-dH)/2,w:dW,h:dH};
+}
+function layoutCropBox(){
+  if(!cropDraft)return;const R=imgDispRect(),c=cropDraft,b=$('#cropBox');
+  b.style.left=(R.left+c.x*R.w)+'px';b.style.top=(R.top+c.y*R.h)+'px';
+  b.style.width=(c.w*R.w)+'px';b.style.height=(c.h*R.h)+'px';
+}
+function buildCropRatios(){
+  const wrap=$('#cropRatios');wrap.innerHTML='';
+  CROP_RATIOS.forEach(c=>{const b=el('button','crop-rchip');b.textContent=c.label;b.dataset.k=c.k;
+    b.setAttribute('role','radio');b.onclick=()=>setCropRatio(c.k);wrap.appendChild(b);});
+  markCropRatios();
+}
+function markCropRatios(){document.querySelectorAll('#cropRatios .crop-rchip').forEach(b=>{
+  const on=b.dataset.k===cropARkey;b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');});}
+function setCropRatio(key){
+  cropARkey=key;cropARn=arnFor((CROP_RATIOS.find(c=>c.k===key)||{}).r);markCropRatios();
+  if(cropARn){                                   // snap to the largest box of this ratio, kept around the current centre
+    const cx=cropDraft.x+cropDraft.w/2, cy=cropDraft.y+cropDraft.h/2;
+    let w=1,h=w/cropARn; if(h>1){h=1;w=h*cropARn;}
+    cropDraft={x:clamp(cx-w/2,0,1-w),y:clamp(cy-h/2,0,1-h),w,h};
+  }
+  layoutCropBox();
+}
+function resizeCropCorner(corner,s,dnx,dny){
+  const MIN=0.07;
+  const cxs=(corner==='tr'||corner==='br')?s.x+s.w:s.x;   // dragged corner start pos
+  const cys=(corner==='bl'||corner==='br')?s.y+s.h:s.y;
+  const ax =(corner==='tr'||corner==='br')?s.x:s.x+s.w;   // fixed (anchor) corner
+  const ay =(corner==='bl'||corner==='br')?s.y:s.y+s.h;
+  const dirX=(corner==='tr'||corner==='br')?1:-1, dirY=(corner==='bl'||corner==='br')?1:-1;
+  const pnx=clamp(cxs+dnx,0,1), pny=clamp(cys+dny,0,1);
+  const maxW=dirX>0?1-ax:ax, maxH=dirY>0?1-ay:ay;
+  if(!cropARn){
+    let nw=clamp(Math.abs(pnx-ax),MIN,maxW), nh=clamp(Math.abs(pny-ay),MIN,maxH);
+    cropDraft={x:dirX>0?ax:ax-nw, y:dirY>0?ay:ay-nh, w:nw, h:nh};
+  }else{
+    let w=Math.max(Math.abs(pnx-ax),Math.abs(pny-ay)*cropARn);
+    w=Math.min(w,maxW,maxH*cropARn);
+    let h=w/cropARn;
+    if(h<MIN){h=MIN;w=h*cropARn;}
+    if(w<MIN){w=MIN;h=w/cropARn;}
+    if(w>maxW){w=maxW;h=w/cropARn;} if(h>maxH){h=maxH;w=h*cropARn;}
+    cropDraft={x:dirX>0?ax:ax-w, y:dirY>0?ay:ay-h, w, h};
+  }
+}
+(function cropDrag(){
+  const ov=$('#crop');let active=null;
+  ov.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.crop-bar'))return;                 // let the chips/buttons work
+    const h=e.target.closest('.crop-h');
+    const box=$('#cropBox').getBoundingClientRect();
+    const inBox=e.clientX>=box.left&&e.clientX<=box.right&&e.clientY>=box.top&&e.clientY<=box.bottom;
+    if(!h&&!inBox)return;
+    active={corner:h&&h.dataset.c,px:e.clientX,py:e.clientY,start:{...cropDraft},R:imgDispRect()};
+    ov.setPointerCapture(e.pointerId);e.preventDefault();
+  });
+  ov.addEventListener('pointermove',e=>{
+    if(!active)return;
+    const dnx=(e.clientX-active.px)/active.R.w, dny=(e.clientY-active.py)/active.R.h, s=active.start;
+    if(active.corner)resizeCropCorner(active.corner,s,dnx,dny);
+    else cropDraft={x:clamp(s.x+dnx,0,1-s.w),y:clamp(s.y+dny,0,1-s.h),w:s.w,h:s.h};
+    layoutCropBox();
+  });
+  const end=e=>{if(active){try{ov.releasePointerCapture(e.pointerId);}catch(_){}active=null;}};
+  ov.addEventListener('pointerup',end);ov.addEventListener('pointercancel',end);
+})();
+function enterCrop(){
+  if(!cur)return;
+  cropMode=true;cropDraft=cropN?{...cropN}:{x:0,y:0,w:1,h:1};
+  cropARkey='free';cropARn=null;
+  $('#preview').classList.add('cropping');$('#crop').hidden=false;
+  buildCropRatios();paintPreview();              // show the whole image while cropping
+  requestAnimationFrame(layoutCropBox);
+}
+function exitCrop(){cropMode=false;$('#crop').hidden=true;$('#preview').classList.remove('cropping');}
+function cancelCrop(){exitCrop();paintPreview();}
+function applyCrop(){
+  const c=cropDraft;
+  cropN=(c.w>=0.999&&c.h>=0.999&&c.x<=0.001&&c.y<=0.001)?null:{...c};   // full = no crop
+  exitCrop();paint();
+}
+$('#btnCrop').onclick=enterCrop;
+$('#cropApply').onclick=applyCrop;
+$('#cropCancel').onclick=cancelCrop;
+window.addEventListener('resize',()=>{if(cropMode)layoutCropBox();});
 
 //// ---------- CAMERA / IMPORT (native system camera) ----------
 // The OS camera handles capture (best quality, native aspect, no custom UI);
@@ -896,7 +1061,7 @@ $('#btnCam').onclick=()=>$('#camInput').click();
 $('#fabImport').onclick=()=>$('#upload').click();
 
 //// foot buttons
-$('#btnReset').onclick=()=>{if(cur){vals=neutralAdj();ED_PANELS.forEach(p=>fillPanel(p.id));paint();}toast('Réglages réinitialisés');};
+$('#btnReset').onclick=()=>{if(cur){vals=neutralAdj();cropN=null;if(cropMode)exitCrop();ED_PANELS.forEach(p=>fillPanel(p.id));paint();}toast('Réglages réinitialisés');};
 
 //// EXPORT (bake the current look into the uploaded photo)
 function slugify(s){return (s||'recette').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
@@ -911,10 +1076,12 @@ async function exportImage(){
   if(!userImg)return;
   const btn=$('#btnExport');btn.classList.add('busy');
   try{
-    let w=userImg.naturalWidth||1200,h=userImg.naturalHeight||800;
-    const maxE=3200,m=Math.max(w,h);if(m>maxE){const s=maxE/m;w=Math.round(w*s);h=Math.round(h*s);}
+    const IW=userImg.naturalWidth||1200, IH=userImg.naturalHeight||800;
+    const reg=cropN?{sx:cropN.x*IW,sy:cropN.y*IH,sw:cropN.w*IW,sh:cropN.h*IH}:{sx:0,sy:0,sw:IW,sh:IH};
+    let w=reg.sw,h=reg.sh; const maxE=3200,m=Math.max(w,h);if(m>maxE){const s=maxE/m;w*=s;h*=s;}
+    w=Math.round(w);h=Math.round(h);
     const cv=document.createElement('canvas');
-    renderRecipe(userImg, cur, vals, cv, w, h);   // full film engine, near-native resolution
+    renderRecipe(userImg, cur, vals, cv, w, h, {crop:reg});   // film engine + crop, near-native resolution
     const name=uniqueName();
     await new Promise(res=>cv.toBlob(b=>{
       if(!b){toast('Export impossible');return res();}
@@ -931,8 +1098,8 @@ $('#btnExport').onclick=exportImage;
 //// toast
 let tT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),1800);}
 
-// close on Esc
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cur)closeEditor();});
+// close on Esc (crop overlay first, then the editor)
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(cropMode)cancelCrop();else if(cur)closeEditor();});
 </script>
 </body>
 </html>
