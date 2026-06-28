@@ -246,7 +246,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .cam{position:fixed;inset:0;z-index:90;background:#000}
 .cam[hidden]{display:none}
 .cam video{position:absolute;width:8px;height:8px;top:0;left:0;opacity:0;pointer-events:none}
-#camCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;display:block;touch-action:manipulation}
+#camCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block;touch-action:manipulation}
 .cam-focus{position:absolute;z-index:3;width:74px;height:74px;margin:-37px 0 0 -37px;border:2px solid var(--accent);
   border-radius:8px;pointer-events:none;opacity:0;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
 .cam-focus.show{animation:camfocus .9s ease-out}
@@ -908,18 +908,24 @@ function setCamPreset(p){
   document.querySelectorAll('#camStrip .cam-chip').forEach(c=>c.classList.toggle('on',+c.dataset.i===p._i));
   const a=document.querySelector('#camStrip .cam-chip.on');if(a)a.scrollIntoView({inline:'center',block:'nearest'});
 }
+// capture/viewfinder frame aspect (w/h): 3:2 in landscape, 2:3 in portrait
+function targetAspect(){return (window.innerWidth>window.innerHeight)?3/2:2/3;}
+// largest centered crop of a wxh source matching the given aspect
+function coverCrop(vw,vh,aspect){let sw,sh;if(vw/vh>aspect){sh=vh;sw=vh*aspect;}else{sw=vw;sh=vw/aspect;}
+  return {sx:(vw-sw)/2,sy:(vh-sh)/2,sw,sh};}
 function drawLive(){
   const v=$('#camVideo');
   if(v.videoWidth&&camPreset){
-    const ar=v.videoWidth/v.videoHeight;
-    let w,h; if(ar>=1){w=LIVE_MAX;h=Math.round(LIVE_MAX/ar);} else {h=LIVE_MAX;w=Math.round(LIVE_MAX*ar);}
+    const a=targetAspect();
+    let w,h; if(a>=1){w=LIVE_MAX;h=Math.round(LIVE_MAX/a);} else {h=LIVE_MAX;w=Math.round(LIVE_MAX*a);}
+    // drawCover crops the video to the target-aspect frame → WYSIWYG with the capture
     renderRecipe(v, camPreset, camAdj, $('#camCanvas'), w, h, {mirror:camFacing==='user', noGrain:true});
   }
   camRAF=requestAnimationFrame(drawLive);
 }
 async function startCam(){
   if(camStream)camStream.getTracks().forEach(t=>t.stop());
-  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing,width:{ideal:1280},height:{ideal:1280}},audio:false});
+  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing,width:{ideal:3840},height:{ideal:2160},frameRate:{ideal:30}},audio:false});
   const v=$('#camVideo');v.srcObject=camStream;await v.play().catch(()=>{});
   $('#camStart').hidden=true;
   // reset & probe capabilities for this stream/lens
@@ -948,29 +954,56 @@ async function flipCam(){
   camFacing=camFacing==='environment'?'user':'environment';
   try{ await startCam(); }catch(e){ toast('Caméra indisponible'); }
 }
-function shootCam(){
-  const v=$('#camVideo'); if(!v.videoWidth){toast('Caméra pas prête');return;}
-  const cv=document.createElement('canvas');
-  renderRecipe(v, camPreset, camAdj, cv, v.videoWidth, v.videoHeight, {mirror:camFacing==='user'});
-  const im=new Image();
-  im.onload=()=>{ userImg=im; const p=camPreset; closeCam(); openEditor(p); toast('Photo capturée'); };
-  im.src=cv.toDataURL('image/jpeg',0.92);
+// grab the highest-quality frame available, orientation kept consistent with the viewfinder
+async function captureFrame(){
+  const v=$('#camVideo');
+  const track=camStream&&camStream.getVideoTracks&&camStream.getVideoTracks()[0];
+  if(track&&window.ImageCapture){
+    try{
+      const ic=new ImageCapture(track);
+      const blob=await ic.takePhoto();                                   // full sensor resolution
+      const bmp=await createImageBitmap(blob,{imageOrientation:'from-image'});
+      const vLand=v.videoWidth>=v.videoHeight, pLand=bmp.width>=bmp.height;
+      if(vLand===pLand) return bmp;                                      // orientation matches viewfinder → use it
+      if(bmp.close)bmp.close();                                          // mismatch → fall back (avoids sideways photo)
+    }catch(e){}
+  }
+  return v.videoWidth?v:null;                                            // fallback: current video frame (WYSIWYG)
+}
+async function shootCam(){
+  const btn=$('#camShutter');btn.style.opacity=.5;
+  try{
+    const src=await captureFrame();
+    const sw=(src&&(src.width||src.videoWidth))||0, sh=(src&&(src.height||src.videoHeight))||0;
+    if(!sw){toast('Caméra pas prête');return;}
+    const a=targetAspect(),c=coverCrop(sw,sh,a);                        // crop to 2:3 / 3:2
+    const cv=document.createElement('canvas');
+    renderRecipe(src, camPreset, camAdj, cv, Math.round(c.sw), Math.round(c.sh), {mirror:camFacing==='user'});
+    if(src.close)src.close();
+    const im=new Image();
+    im.onload=()=>{ userImg=im; const p=camPreset; closeCam(); openEditor(p); toast('Photo capturée'); };
+    im.src=cv.toDataURL('image/jpeg',0.95);
+  }finally{btn.style.opacity='';}
 }
 // tap-to-focus: map the tap to the sensor frame (cover-crop + selfie mirror) and apply
 function focusAt(clientX,clientY){
   const cnv=$('#camCanvas'),rect=cnv.getBoundingClientRect();
-  // visual feedback ring at the tap point
+  // the framed view (object-fit:contain of the target-aspect canvas) is centred in the element
+  const a=targetAspect();
+  let cw,ch; if(rect.width/rect.height>a){ch=rect.height;cw=ch*a;}else{cw=rect.width;ch=cw/a;}
+  const cx0=rect.left+(rect.width-cw)/2, cy0=rect.top+(rect.height-ch)/2;
+  const fx=(clientX-cx0)/cw, fy=(clientY-cy0)/ch;        // 0..1 within the framed view
+  if(fx<0||fx>1||fy<0||fy>1)return;                      // tap in the letterbox → ignore
+  // visual feedback ring + native-style exposure slider at the tap point
   const f=$('#camFocus');f.style.left=(clientX-rect.left)+'px';f.style.top=(clientY-rect.top)+'px';
   f.classList.remove('show');void f.offsetWidth;f.classList.add('show');
-  showExpoAt(clientX,clientY);   // native-style exposure slider next to the focus point
+  showExpoAt(clientX,clientY);
   if(!camStream)return;
   const track=camStream.getVideoTracks()[0];if(!track)return;
   const v=$('#camVideo'),vw=v.videoWidth,vh=v.videoHeight;if(!vw)return;
-  const tx=(clientX-rect.left)/rect.width, ty=(clientY-rect.top)/rect.height;   // 0..1 on screen
-  const scale=Math.max(rect.width/vw,rect.height/vh);                            // object-fit cover
-  const fracX=rect.width/(vw*scale), fracY=rect.height/(vh*scale);
-  let x=(1-fracX)/2+tx*fracX, y=(1-fracY)/2+ty*fracY;                            // 0..1 in sensor frame
-  if(camFacing==='user')x=1-x;                                                   // display is mirrored
+  const crop=coverCrop(vw,vh,a);                          // video region shown in the frame
+  let x=(crop.sx+fx*crop.sw)/vw, y=(crop.sy+fy*crop.sh)/vh;
+  if(camFacing==='user')x=1-x;                            // display is mirrored
   x=Math.max(0,Math.min(1,x));y=Math.max(0,Math.min(1,y));
   const caps=track.getCapabilities?track.getCapabilities():{};
   const adv={pointsOfInterest:[{x,y}]};
