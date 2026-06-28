@@ -15,16 +15,16 @@
 <meta name="apple-mobile-web-app-title" content="fotn">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap">
 <style>
 :root{
-  /* Kodak — black & yellow */
+  /* Monochrome — black / white / grey (colour lives only in the photos) */
   --bg:#000000; --bg2:#0c0c0c; --panel:#151515; --panel2:#1e1e1e;
   --line:#2a2a2a; --line2:#3a3a3a;
   --txt:#f4f4f4; --txt2:#aeaeae; --txt3:#8c8c8c;
-  --accent:#ffcd00; --accent2:#ffd633;
-  --pos:#ffcd00; --neg:#8a8a8a;
-  --ink:#0a0a0a;            /* text/icon colour on yellow */
+  --accent:#ffffff; --accent2:#e6e6e6;   /* "accent" = the brightest neutral, for active/primary */
+  --pos:#f0f0f0; --neg:#8a8a8a;
+  --ink:#0a0a0a;            /* text/icon colour on the white accent */
   /* radius scale */
   --r-lg:16px;             /* cards, sheets */
   --r-md:11px;             /* inputs, buttons, panels, controls */
@@ -36,7 +36,7 @@
 html,body{margin:0;height:100%}
 body{
   background:var(--bg); color:var(--txt);
-  font-family:"Google Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-family:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif;
   font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
 }
@@ -207,9 +207,9 @@ header.top{
 .range .fill{position:absolute;height:4px;border-radius:3px;background:var(--accent);opacity:.9}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;background:transparent;position:relative;z-index:2;margin:0;height:26px}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
-  background:#fff;border:2px solid var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:grab}
+  background:#fff;border:2px solid #0a0a0a;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 2px 8px rgba(0,0,0,.5);cursor:grab}
 input[type=range]::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.12)}
-input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--accent)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #0a0a0a}
 
 /* segmented */
 .seg-row{margin-bottom:16px}
@@ -290,7 +290,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 .fabs{position:fixed;right:16px;bottom:calc(var(--safe-b) + 16px);z-index:30;display:flex;flex-direction:column;gap:10px}
 .fab{width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--ink);
-  display:grid;place-items:center;box-shadow:0 8px 24px -6px var(--accent);transition:transform .15s,filter .15s}
+  display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(0,0,0,.7);transition:transform .15s,filter .15s}
 .fab:hover{transform:translateY(-2px);filter:brightness(1.06)}
 .fab:active{transform:translateY(0)}
 .fab.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line2);box-shadow:0 6px 18px rgba(0,0,0,.4);width:46px;height:46px}
