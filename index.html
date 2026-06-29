@@ -128,7 +128,18 @@ header.top{
 .card .name{font-size:13px;font-weight:600;line-height:1.25;margin:0 0 3px;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}
 .card .sub{font-size:11px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.empty{text-align:center;color:var(--txt3);padding:60px 20px}
+.empty{text-align:center;color:var(--txt3);padding:64px 24px;grid-column:1/-1}
+.empty-h{font-size:16px;font-weight:700;color:var(--txt2);margin:0 0 8px}
+.empty-sub{font-size:13px;line-height:1.6;max-width:340px;margin:0 auto}
+
+/* library photo card (the home is now the user's photos) */
+.lib-title{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--txt2)}
+.pcard{position:relative;overflow:hidden;cursor:pointer;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r-md);aspect-ratio:1/1;transition:transform .15s,border-color .15s}
+.pcard:hover{transform:translateY(-2px);border-color:var(--line2)}
+.pcard:active{transform:translateY(0) scale(.99)}
+.pcard img{width:100%;height:100%;object-fit:cover;display:block}
+.view-list .pcard{aspect-ratio:16/10}
 
 /* ---------- DETAIL / EDITOR ---------- */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);opacity:0;
@@ -147,7 +158,7 @@ header.top{
     border-left:1px solid var(--line);box-shadow:-30px 0 60px -30px rgba(0,0,0,.6)}
   .editor.open{transform:translateX(0)}
 }
-.ed-head{display:flex;align-items:center;gap:12px;padding:calc(var(--safe-t) + 12px) 16px 12px;
+.ed-head{display:flex;align-items:center;gap:8px;padding:calc(var(--safe-t) + 12px) 14px 12px;
   border-bottom:1px solid var(--line);flex:none}
 .ed-head .x{position:relative;width:34px;height:34px;border-radius:var(--r-md);background:var(--panel2);display:grid;place-items:center;flex:none;transition:background .15s}
 .ed-head .x:hover{background:var(--line2)}
@@ -213,9 +224,9 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   display:grid;place-items:center;flex:none;color:var(--txt);transition:background .15s,filter .15s}
 .ed-head .hbtn:hover{background:var(--line2)}
 .ed-head .hbtn::before{content:"";position:absolute;inset:-5px}   /* ≥44px touch target */
-.ed-head .hbtn.exp{background:var(--accent);color:var(--ink)}
-.ed-head .hbtn.exp:hover{background:var(--accent);filter:brightness(1.08)}
 .ed-head .hbtn.exp.busy{opacity:.6;pointer-events:none}
+.ed-head .hbtn.save{background:var(--accent);color:var(--ink)}        /* primary action */
+.ed-head .hbtn.save:hover{background:var(--accent);filter:brightness(1.08)}
 .ed-head .hbtn[hidden]{display:none}
 
 /* ---------- EDITOR DOCK (VSCO-style): a rail above a two-tab menu ---------- */
@@ -293,8 +304,8 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       </svg>
     </div>
     <div class="toolbar">
-      <div class="filters" id="filters"></div>
-      <div class="viewseg" id="viewToggle" role="radiogroup" aria-label="Affichage des recettes">
+      <span class="lib-title">Mes photos</span>
+      <div class="viewseg" id="viewToggle" role="radiogroup" aria-label="Affichage de la bibliothèque">
         <button data-v="compact" aria-label="Grille compacte" title="Grille compacte">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"></path></svg>
         </button>
@@ -310,14 +321,10 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 
   <main>
     <div id="gallery" class="gallery view-large"></div>
-    <div class="loadmore-wrap"><button id="loadMore" class="loadmore" hidden></button></div>
   </main>
 </div>
 
 <div class="fabs">
-  <button class="fab sec" id="fabFav" title="Favoris" aria-label="Afficher les favoris" aria-pressed="false">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
-  </button>
   <button class="fab sec" id="fabImport" title="Importer une photo" aria-label="Importer une photo">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>
   </button>
@@ -327,6 +334,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 </div>
 <!-- native system camera (capture) + library import file inputs -->
 <input id="camInput" type="file" accept="image/*" capture="environment" hidden>
+<input id="upload" type="file" accept="image/*" hidden>
 
 <!-- EDITOR -->
 <div class="scrim" id="scrim"></div>
@@ -335,30 +343,24 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
     <button class="x" id="edClose" aria-label="Fermer">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
     </button>
-    <div class="t"><h2 id="edName">—</h2><span id="edSub"></span></div>
-    <button class="hfav" id="edFav" aria-label="Favori" aria-pressed="false">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"></path></svg>
-    </button>
+    <div class="t"><h2 id="edName">—</h2></div>
     <button class="hbtn" id="btnReset" aria-label="Réinitialiser" title="Réinitialiser">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"></path></svg>
     </button>
+    <button class="hbtn" id="btnDelete" aria-label="Supprimer" title="Supprimer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>
+    </button>
     <button class="hbtn exp" id="btnExport" aria-label="Exporter" title="Exporter" hidden>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>
+    </button>
+    <button class="hbtn save" id="btnSave" aria-label="Enregistrer" title="Enregistrer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>
     </button>
   </div>
 
   <div class="preview" id="preview">
     <canvas id="pvCanvas" role="img" aria-label="Aperçu de la recette appliquée à la photo"></canvas>
     <div class="pv-tools">
-      <button class="pv-btn" id="btnCam">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg>
-        Caméra
-      </button>
-      <label class="pv-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>
-        Ma photo
-        <input id="upload" type="file" accept="image/*" hidden>
-      </label>
       <button class="pv-btn" id="btnCrop">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7zm10-2h2V7c0-1.1-.9-2-2-2H9v2h8v8z"></path></svg>
         Recadrer
@@ -436,7 +438,7 @@ function wireRadios(group){
 // Generic royalty-free photo (served alongside the app) used on cards + as default preview.
 const GENERIC_IMG='generic.jpg?v=2';
 const baseImg=new Image();let baseReady=false;
-baseImg.onload=()=>{baseReady=true;rerenderCards();};
+baseImg.onload=()=>{baseReady=true;};
 baseImg.src=GENERIC_IMG;
 function clamp(x,a,b){return x<a?a:x>b?b:x;}
 function lerp(a,b,t){return a+(b-a)*t;}
@@ -450,7 +452,6 @@ let lutRepaintScheduled=false;
 function onLutReady(){
   if(lutRepaintScheduled)return;lutRepaintScheduled=true;
   requestAnimationFrame(()=>{lutRepaintScheduled=false;
-    rerenderCards();
     if($('#editor').classList.contains('open')){paint();if(edMode==='presets'&&!toolK)paintPresetRail();}
   });
 }
@@ -633,103 +634,81 @@ function renderRecipe(src,P,A,canvas,w,h,opts){
 }
 
 //// ---------- STATE ----------
-let RECIPES=[], FILTERED=[], rendered=0;
-let VIEW=['compact','large','list'].includes(localStorage.getItem('fudge_view'))?localStorage.getItem('fudge_view'):'large';
-let cur=null;            // recipe being edited
-let vals={};             // live control values
-let userImg=null;        // uploaded image data url
+let RECIPES=[], RAIL=[];
+let VIEW=['compact','large','list'].includes(localStorage.getItem('fotn_view'))?localStorage.getItem('fotn_view'):'large';
+let cur=null;            // preset currently applied in the editor
+let vals={};             // live adjustment values
+let userImg=null, userURL=null;   // current photo (Image) + its object URL
 let cropN=null;          // applied crop {x,y,w,h} normalised to the image, or null = full
 let cropMode=false, cropDraft=null, cropARn=null, cropARkey='free';
-const favs=new Set(JSON.parse(localStorage.getItem('fuji_favs')||'[]'));
-const filterState={mono:'all', fav:false};
+let library=[];          // the user's photos (newest first)
+let currentItem=null;    // library item being edited
+// "no preset" — shows the photo untouched (first chip in the rail, like VSCO's "—")
+const ORIGINAL={name:'Original', film:'Photo d’origine', cat:'', _i:-1};
 
 const $=s=>document.querySelector(s);
 const el=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;};
+function esc(s){return (s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+
+//// ---------- PERSISTENCE (IndexedDB: each photo's original blob + edit state) ----------
+let _db=null;
+function idbOpen(){return new Promise((res,rej)=>{
+  if(_db)return res(_db);
+  const r=indexedDB.open('fotn',1);
+  r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains('photos'))db.createObjectStore('photos',{keyPath:'id'});};
+  r.onsuccess=()=>{_db=r.result;res(_db);};
+  r.onerror=()=>rej(r.error);
+});}
+function idbPut(item){return idbOpen().then(db=>new Promise((res,rej)=>{
+  const t=db.transaction('photos','readwrite');t.objectStore('photos').put(item);
+  t.oncomplete=()=>res();t.onerror=()=>rej(t.error);}));}
+function idbDelete(id){return idbOpen().then(db=>new Promise((res,rej)=>{
+  const t=db.transaction('photos','readwrite');t.objectStore('photos').delete(id);
+  t.oncomplete=()=>res();t.onerror=()=>rej(t.error);}));}
+function idbGetAll(){return idbOpen().then(db=>new Promise((res,rej)=>{
+  const r=db.transaction('photos','readonly').objectStore('photos').getAll();
+  r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);}));}
 
 //// ---------- LOAD ----------
 RECIPES=PRESETS.map((p,i)=>{p._i=i;return p;});
-RECIPES.forEach(p=>{if(p.lut)loadLUT(p.lut);});   // warm the LUT cache (small Hald PNGs)
-buildFilters();
-applyFilters();
+RAIL=[ORIGINAL].concat(RECIPES);                  // editor rail = "Original" + the film looks
+RECIPES.forEach(p=>{if(p.lut)loadLUT(p.lut);});    // warm the LUT cache (small Hald PNGs)
+loadLibrary();
 
-//// ---------- FILTER BAR ----------
-function buildFilters(){
-  const wrap=$('#filters');wrap.innerHTML='';
-  const mk=(label,on,fn)=>{const b=el('button','chip');b.textContent=label;if(on)b.classList.add('on');b.setAttribute('aria-pressed',on?'true':'false');b.onclick=fn;return b;};
-  wrap.appendChild(mk('Favoris', filterState.fav,()=>{filterState.fav=!filterState.fav;buildFilters();applyFilters();}));
-  wrap.appendChild(mk('Couleur', filterState.mono==='color',()=>{filterState.mono=filterState.mono==='color'?'all':'color';buildFilters();applyFilters();}));
-  wrap.appendChild(mk('Noir & blanc', filterState.mono==='bw',()=>{filterState.mono=filterState.mono==='bw'?'all':'bw';buildFilters();applyFilters();}));
+function loadLibrary(){
+  idbGetAll().then(items=>{library=items.sort((a,b)=>(b.created||0)-(a.created||0));renderLibrary();})
+             .catch(()=>{library=[];renderLibrary();});
 }
 
-function applyFilters(){
-  FILTERED=RECIPES.filter(r=>{
-    if(filterState.fav && !favs.has(r._i)) return false;
-    if(filterState.mono==='color' && r.mono) return false;
-    if(filterState.mono==='bw' && !r.mono) return false;
-    return true;
-  });
-  rendered=0;$('#gallery').innerHTML='';
-  if(!FILTERED.length){$('#gallery').innerHTML='<div class="empty">Aucune recette trouvée 🎞️</div>';$('#loadMore').hidden=true;return;}
-  renderMore();
+//// ---------- HOME = PHOTO LIBRARY ----------
+function renderLibrary(){
+  const g=$('#gallery');g.innerHTML='';
+  if(!library.length){
+    g.innerHTML='<div class="empty"><p class="empty-h">Aucune photo</p><p class="empty-sub">Prends une photo ou importe-en une — elles s’affichent ici, et tu peux y revenir pour les retoucher.</p></div>';
+    return;
+  }
+  const frag=document.createDocumentFragment();
+  library.forEach(it=>frag.appendChild(photoCard(it)));
+  g.appendChild(frag);
 }
-
-//// ---------- GALLERY RENDER (load-more, 3 view modes) ----------
-function cardDims(){return VIEW==='large'?[480,384]:VIEW==='list'?[320,240]:[260,208];}
-function pageSize(){return VIEW==='compact'?36:12;}
-function card(r){
-  const c=el('div','card');
-  c.tabIndex=0;c.setAttribute('role','button');
-  c.setAttribute('aria-label',`Ouvrir le preset ${r.name||''} · ${r.cat||''}`);
-  c.onclick=()=>openEditor(r);
-  c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openEditor(r);}};
-  const fav=favs.has(r._i);
-  const [w,h]=cardDims();
-  c.innerHTML=`
-    <div class="thumb">
-      <canvas class="ph" data-ri="${r._i}" width="${w}" height="${h}" aria-hidden="true"></canvas>
-      <span class="badge">${esc(r.cat||'')}</span>
-      ${r.mono?'<span class="badge mono">N&B</span>':''}
-      <button class="fav ${fav?'on':''}" data-i="${r._i}" aria-label="Ajouter aux favoris" aria-pressed="${fav}">${heartSvg(fav,16)}</button>
-    </div>
-    <div class="body">
-      <div class="lbase">${esc(r.cat||'')}</div>
-      <p class="name">${esc(r.name||'')}</p>
-      <div class="sub">${esc(r.film||'')}</div>
-    </div>`;
-  c.querySelector('.fav').onclick=(e)=>{e.stopPropagation();toggleFav(r._i,e.currentTarget);};
-  const cv=c.querySelector('canvas');
-  if(baseReady)renderRecipe(baseImg,r,NEUTRAL,cv,w,h);
+function photoCard(it){
+  const c=el('div','pcard');c.tabIndex=0;c.setAttribute('role','button');c.setAttribute('aria-label','Ouvrir la photo');
+  c.onclick=()=>openItem(it);
+  c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openItem(it);}};
+  const img=el('img');img.alt='';img.loading='lazy';if(it.thumb)img.src=it.thumb;
+  c.appendChild(img);
   return c;
 }
-// (Re)paint every card thumbnail (after the image loads, or on view change).
-function rerenderCards(){
-  if(!baseReady)return;const [w,h]=cardDims();
-  document.querySelectorAll('.thumb canvas[data-ri]').forEach(cv=>{
-    const r=RECIPES[+cv.dataset.ri]; if(r)renderRecipe(baseImg,r,NEUTRAL,cv,w,h);
-  });
-}
-function renderMore(){
-  const g=$('#gallery');const frag=document.createDocumentFragment();
-  const end=Math.min(rendered+pageSize(),FILTERED.length);
-  for(let i=rendered;i<end;i++)frag.appendChild(card(FILTERED[i]));
-  g.appendChild(frag);rendered=end;updateLoadMore();
-}
-function updateLoadMore(){
-  const btn=$('#loadMore');const rem=FILTERED.length-rendered;
-  if(rem>0){btn.hidden=false;btn.textContent=`Charger plus · ${rem} restantes`;}
-  else btn.hidden=true;
-}
-$('#loadMore').onclick=renderMore;
 
 //// ---------- VIEW MODE ----------
 function setView(v){
   if(!['compact','large','list'].includes(v))v='large';
-  VIEW=v;localStorage.setItem('fudge_view',v);
-  $('#gallery').className='gallery view-'+v;
+  VIEW=v;localStorage.setItem('fotn_view',v);
+  $('#gallery').className='gallery view-'+v;     // CSS reflows the existing thumbnails
   document.querySelectorAll('#viewToggle button').forEach(b=>{
     const on=b.dataset.v===v;b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');b.tabIndex=on?0:-1;
   });
-  rendered=0;$('#gallery').innerHTML='';renderMore();   // re-render so canvases match the new size
 }
 (function initViewToggle(){
   const vt=$('#viewToggle');vt.setAttribute('data-rg','view');
@@ -737,18 +716,6 @@ function setView(v){
   setView(VIEW);
   wireRadios(vt);
 })();
-
-function esc(s){return (s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
-
-//// ---------- FAVORITES ----------
-function toggleFav(i,btn){
-  if(favs.has(i))favs.delete(i);else favs.add(i);
-  localStorage.setItem('fuji_favs',JSON.stringify([...favs]));
-  if(btn){const on=favs.has(i);btn.classList.toggle('on',on);setHeart(btn,on);}
-}
-$('#fabFav').onclick=()=>{filterState.fav=!filterState.fav;buildFilters();applyFilters();
-  $('#fabFav').setAttribute('aria-pressed',filterState.fav?'true':'false');
-  toast(filterState.fav?'Favoris seulement':'Toutes les recettes');};
 
 //// ---------- EDITOR ----------
 // Universal photo adjustments layered on top of the chosen preset (neutral = 0).
@@ -767,16 +734,28 @@ const ADJ=[
 ];
 function neutralAdj(){const o={};ADJ.forEach(a=>o[a.k]=(a.def==null?0:a.def));return o;}
 
-let lastPreset=null;        // last look opened — reused when capturing/importing a photo
-function openEditor(r){
-  cur=r;lastPreset=r;
-  vals=neutralAdj();cropN=null;
-  $('#edName').textContent=r.name||'';
-  $('#edSub').textContent=r.film||'';
-  syncFav();
+// — load a photo Image from its stored blob —
+function blobToImage(blob){return new Promise((res,rej)=>{
+  const u=URL.createObjectURL(blob);const im=new Image();
+  im.onload=()=>res({img:im,url:u});im.onerror=e=>{URL.revokeObjectURL(u);rej(e);};im.src=u;
+});}
+function setUserImg(img,url){if(userURL)URL.revokeObjectURL(userURL);userImg=img;userURL=url||null;}
+
+// — open a library photo for editing (restores its saved look + adjustments) —
+async function openItem(it){
+  let r; try{r=await blobToImage(it.blob);}catch(e){toast('Photo illisible');return;}
+  currentItem=it;
+  setUserImg(r.img,r.url);
+  const ed=it.edit||{};
+  cur = ed.presetName ? (RECIPES.find(p=>p.name===ed.presetName)||ORIGINAL) : ORIGINAL;
+  vals = Object.assign(neutralAdj(), ed.vals||{});
+  cropN = ed.crop ? {...ed.crop} : null;
+  openEditorUI();
+}
+function openEditorUI(){
   edMode='presets';toolK=null;
-  renderDock();
-  paint();
+  $('#edName').textContent=(cur&&cur.name)||'';
+  renderDock();paint();
   document.body.style.overflow='hidden';
   // a11y: remember focus origin, neutralise background, move focus into the dialog
   lastFocused=document.activeElement;
@@ -787,16 +766,44 @@ function openEditor(r){
 }
 let lastFocused=null;
 function bgInert(on){['.app','.fabs'].forEach(s=>{const n=document.querySelector(s);if(n){if(on)n.setAttribute('inert','');else n.removeAttribute('inert');}});}
-function closeEditor(){if(cropMode)exitCrop();$('#scrim').classList.remove('show');$('#editor').classList.remove('open');
-  document.body.style.overflow='';cur=null;
-  bgInert(false);
-  if(lastFocused&&lastFocused.focus){lastFocused.focus();}lastFocused=null;}
-$('#edClose').onclick=closeEditor;$('#scrim').onclick=closeEditor;
 
-function syncFav(){const on=cur&&favs.has(cur._i);const b=$('#edFav');
-  b.classList.toggle('on',!!on);setHeart(b,!!on);}
-$('#edFav').onclick=()=>{if(!cur)return;toggleFav(cur._i);syncFav();
-  document.querySelectorAll(`.fav[data-i="${cur._i}"]`).forEach(b=>{const on=favs.has(cur._i);b.classList.toggle('on',on);setHeart(b,on);});};
+// — persist the current edit (look + adjustments + crop) back to the library —
+function gatherEdit(){return {presetName:(cur&&cur._i>=0)?cur.name:'', vals:{...vals}, crop:cropN?{...cropN}:null};}
+function makeThumb(){
+  if(!userImg)return null;
+  const IW=userImg.naturalWidth||userImg.width||3, IH=userImg.naturalHeight||userImg.height||2;
+  const reg=cropN?{sx:cropN.x*IW,sy:cropN.y*IH,sw:cropN.w*IW,sh:cropN.h*IH}:{sx:0,sy:0,sw:IW,sh:IH};
+  let w=reg.sw,h=reg.sh,m=Math.max(w,h),cap=480;if(m>cap){const s=cap/m;w*=s;h*=s;}
+  const cv=document.createElement('canvas');
+  renderRecipe(userImg,cur,vals,cv,Math.max(1,Math.round(w)),Math.max(1,Math.round(h)),{crop:reg});
+  try{return cv.toDataURL('image/jpeg',0.82);}catch(e){return null;}
+}
+function saveItem(silent){
+  if(!currentItem)return Promise.resolve();
+  currentItem.edit=gatherEdit();
+  const t=makeThumb();if(t)currentItem.thumb=t;
+  const ix=library.findIndex(x=>x.id===currentItem.id);if(ix>=0)library[ix]=currentItem;
+  return idbPut(currentItem).then(()=>{renderLibrary();if(!silent)toast('Modifications enregistrées');})
+                            .catch(()=>{if(!silent)toast('Échec de l’enregistrement');});
+}
+function deleteCurrent(){
+  if(!currentItem)return;
+  if(!confirm('Supprimer cette photo de la bibliothèque ?'))return;
+  const id=currentItem.id;
+  idbDelete(id).then(()=>{library=library.filter(x=>x.id!==id);renderLibrary();teardownEditor();toast('Photo supprimée');});
+}
+function teardownEditor(){
+  if(cropMode)exitCrop();
+  $('#scrim').classList.remove('show');$('#editor').classList.remove('open');
+  document.body.style.overflow='';
+  bgInert(false);
+  if(lastFocused&&lastFocused.focus){lastFocused.focus();}lastFocused=null;
+  currentItem=null;cur=null;
+}
+function closeEditor(){if(currentItem)saveItem(true);teardownEditor();}   // closing auto-saves
+$('#edClose').onclick=closeEditor;$('#scrim').onclick=closeEditor;
+$('#btnSave').onclick=()=>saveItem(false);
+$('#btnDelete').onclick=deleteCurrent;
 
 //// ---------- EDITOR DOCK (VSCO-style: Préréglages / Réglages / single tool) ----------
 const SLIDER_BY_K=Object.fromEntries(ADJ.map(s=>[s.k,s]));
@@ -823,10 +830,11 @@ function renderMenu(){
   });
 }
 
-// — presets rail: one thumbnail per look, previewed on the current photo —
+// — presets rail: "Original" + one thumbnail per look, previewed on the current photo —
+const presetByI=i=>(i<0?ORIGINAL:RECIPES[i]);
 function buildPresetRail(rail){
   const frag=document.createDocumentFragment();
-  RECIPES.forEach(p=>{
+  RAIL.forEach(p=>{
     const b=el('button','pchip');b.dataset.i=p._i;
     b.setAttribute('role','option');b.setAttribute('aria-label',p.name||'');
     const cv=el('canvas');cv.width=112;cv.height=112;cv.setAttribute('aria-hidden','true');
@@ -845,7 +853,7 @@ function paintPresetRail(){
     const src=userImg||baseImg;
     if(!src||!(src.naturalWidth||src.width))return;
     document.querySelectorAll('#edRail .pchip canvas').forEach(cv=>{
-      const p=RECIPES[+cv.parentNode.dataset.i];if(p)renderRecipe(src,p,NEUTRAL,cv,112,112);
+      const p=presetByI(+cv.parentNode.dataset.i);if(p)renderRecipe(src,p,NEUTRAL,cv,112,112);
     });
   });
 }
@@ -858,9 +866,9 @@ function markPresetRail(){
 }
 // Switch preset inside the editor — keeps the user's manual adjustments.
 function selectPreset(p){
-  if(!p)return;cur=p;lastPreset=p;
-  $('#edName').textContent=p.name||'';$('#edSub').textContent=p.film||'';
-  syncFav();markPresetRail();paint();
+  if(!p)return;cur=p;
+  $('#edName').textContent=p.name||'';
+  markPresetRail();paint();
 }
 
 // — réglages rail: one chip per adjustment (shows its value when active) —
@@ -928,15 +936,18 @@ function paintPreview(){
 // slider handlers call paintLook(); keep the name, route to the canvas render.
 const paintLook=paintPreview;
 
-// Load a photo from the native camera or the library, then open/refresh the editor.
-function loadPhotoFile(f){
-  if(!f)return;const rd=new FileReader();
-  rd.onload=()=>{const im=new Image();im.onload=()=>{
-    userImg=im;cropN=null;                    // new photo → drop any previous crop
-    if($('#editor').classList.contains('open')){if(cropMode)cancelCrop();renderDock();paint();}
-    else openEditor(lastPreset||FILTERED[0]||RECIPES[0]);
-  };im.src=rd.result;};
-  rd.readAsDataURL(f);
+// A new photo (camera or library) → create a library item, store it, and open the editor.
+async function loadPhotoFile(f){
+  if(!f)return;
+  let r; try{r=await blobToImage(f);}catch(e){toast('Photo illisible');return;}
+  const item={id:uid(), created:Date.now(), blob:f, edit:{presetName:'',vals:neutralAdj(),crop:null}, thumb:null};
+  currentItem=item;
+  setUserImg(r.img,r.url);
+  cur=ORIGINAL;vals=neutralAdj();cropN=null;
+  item.thumb=makeThumb();
+  library.unshift(item);
+  idbPut(item).then(renderLibrary).catch(()=>{});
+  openEditorUI();
 }
 // reset value so re-picking the same file still fires "change"
 $('#upload').addEventListener('change',e=>{loadPhotoFile(e.target.files[0]);e.target.value='';});
@@ -1052,7 +1063,6 @@ window.addEventListener('resize',()=>{if(cropMode)layoutCropBox();});
 // The OS camera handles capture (best quality, native aspect, no custom UI);
 // the look is then applied & tweaked in the editor.
 $('#fabCam').onclick=()=>$('#camInput').click();
-$('#btnCam').onclick=()=>$('#camInput').click();
 $('#fabImport').onclick=()=>$('#upload').click();
 
 //// foot buttons
