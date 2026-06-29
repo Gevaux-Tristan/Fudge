@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#000000">
 <title>fotn</title>
 <meta name="description" content="fotn — presets photo inspirés des pellicules argentiques classiques, à appliquer et régler sur vos photos.">
-<link rel="icon" type="image/svg+xml" href="icon.svg?v=4">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=4">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
+<link rel="icon" type="image/svg+xml" href="icon.svg?v=5">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=5">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -47,7 +47,9 @@ input{font-family:inherit}
 ::-webkit-scrollbar-track{background:transparent}
 
 /* ---------- HEADER ---------- */
-.app{max-width:1320px;margin:0 auto;padding:0 16px}
+/* ambient flickering-particle "f" backdrop */
+#bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;display:block}
+.app{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:0 16px}
 header.top{
   position:sticky;top:0;z-index:40;
   padding-top:calc(var(--safe-t) + 14px);
@@ -260,6 +262,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 </style>
 </head>
 <body>
+<canvas id="bgfx" aria-hidden="true"></canvas>
 <div class="app">
   <header class="top">
     <div class="brand">
@@ -721,6 +724,7 @@ async function openItem(it){
   openEditorUI();
 }
 function openEditorUI(){
+  if(window.__bgfx)__bgfx.stop();
   edMode='presets';toolK=null;
   $('#edName').textContent=(cur&&cur.name)||'';
   renderDock();paint();
@@ -767,6 +771,7 @@ function teardownEditor(){
   bgInert(false);
   if(lastFocused&&lastFocused.focus){lastFocused.focus();}lastFocused=null;
   currentItem=null;cur=null;
+  if(window.__bgfx)__bgfx.start();
 }
 function closeEditor(){if(currentItem)saveItem(true);teardownEditor();}   // closing auto-saves
 $('#edClose').onclick=closeEditor;$('#scrim').onclick=closeEditor;
@@ -1113,6 +1118,54 @@ let tT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('sh
 
 // close on Esc (crop overlay first, then the editor)
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(toolK)cancelTool();else if(cropMode)cancelCrop();else if(cur)closeEditor();});
+
+//// ---------- AMBIENT BACKDROP: flickering-particle "f" symbol ----------
+(function bgFx(){
+  const cv=document.getElementById('bgfx');if(!cv)return;
+  const ctx=cv.getContext('2d');if(!ctx)return;
+  // the fotn symbol (viewBox 55×124); particles are masked to this silhouette
+  const PATH=new Path2D('M31.5479 123.975H16.2002V49.7939H0V37.0049H16.2002C16.2002 29.6153 17.7352 23.1351 20.8047 17.5645C23.9878 11.8803 28.4214 7.56034 34.1055 4.60449C39.9035 1.53496 46.6115 0 54.2285 0V3.75098C47.4074 3.75098 41.3819 5.11536 36.1523 7.84375C31.0365 10.4585 27.0008 14.3245 24.0449 19.4404C21.2028 24.5563 19.7812 30.4111 19.7812 37.0049H50.6475V49.7939H31.5479V123.975Z');
+  const VBW=55, VBH=124, SQ=3, GAP=6, PITCH=SQ+GAP, MAXO=0.46, FLICK=0.10;
+  const now=()=>(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let dpr=1,w=0,h=0,cells=[],raf=0,lastT=0,paused=false;
+  function build(){
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    w=window.innerWidth;h=window.innerHeight;
+    cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';
+    // place the symbol: tall, centred, never wider than the viewport
+    const targetH=Math.min(h*0.72, w*1.7), s=targetH/VBH;
+    const fw=VBW*s, ox=(w-fw)/2, oy=(h-targetH)/2;
+    // build the silhouette mask offscreen, then keep only grid cells inside it
+    const mc=document.createElement('canvas');mc.width=w;mc.height=h;
+    const mx=mc.getContext('2d');mx.setTransform(s,0,0,s,ox,oy);mx.fillStyle='#fff';mx.fill(PATH);
+    let data;try{data=mx.getImageData(0,0,w,h).data;}catch(e){return;}
+    cells=[];
+    for(let y=0;y<h;y+=PITCH)for(let x=0;x<w;x+=PITCH){
+      const sx=(x+SQ/2)|0, sy=(y+SQ/2)|0;
+      if(sx<w&&sy<h&&data[(sy*w+sx)*4+3]>40)cells.push({x,y,o:Math.random()*MAXO});
+    }
+    draw();
+  }
+  function draw(){
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    for(let i=0;i<cells.length;i++){const c=cells[i];ctx.fillStyle='rgba(244,244,244,'+c.o.toFixed(3)+')';ctx.fillRect(c.x,c.y,SQ,SQ);}
+  }
+  function animate(t){
+    raf=requestAnimationFrame(animate);
+    const dt=Math.min((t-lastT)/1000,0.1);lastT=t;
+    let changed=false;
+    for(let i=0;i<cells.length;i++){if(Math.random()<FLICK*dt){cells[i].o=Math.random()*MAXO;changed=true;}}
+    if(changed)draw();
+  }
+  function start(){if(reduce||raf||paused)return;lastT=now();raf=requestAnimationFrame(animate);}
+  function stop(){if(raf){cancelAnimationFrame(raf);raf=0;}}
+  build();start();
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(build,200);});
+  document.addEventListener('visibilitychange',()=>{document.hidden?stop():start();});
+  // expose so the editor can pause it while it covers the screen
+  window.__bgfx={start:()=>{paused=false;start();},stop:()=>{paused=true;stop();}};
+})();
 </script>
 </body>
 </html>
