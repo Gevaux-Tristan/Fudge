@@ -787,7 +787,7 @@ function renderRail(){
 function renderMenu(){
   const menu=$('#edMenu');if(!menu)return;menu.className='ed-menu';menu.innerHTML='';
   if(toolK){menu.classList.add('editing');buildToolMenu(menu);return;}
-  [['presets','Préréglages'],['adjust','Réglages']].forEach(([m,label])=>{
+  [['presets','Filtres'],['adjust','Réglages']].forEach(([m,label])=>{
     const b=el('button','m');b.textContent=label;b.setAttribute('role','tab');
     if(edMode===m){b.classList.add('on');b.setAttribute('aria-selected','true');}
     b.onclick=()=>{if(edMode!==m){edMode=m;toolK=null;renderDock();}};
