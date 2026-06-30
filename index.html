@@ -152,6 +152,15 @@ header.top{
 .crop-h.tr{right:-15px;top:-15px}.crop-h.tr::before{right:0;top:0;border-left:none;border-bottom:none}
 .crop-h.bl{left:-15px;bottom:-15px}.crop-h.bl::before{left:0;bottom:0;border-right:none;border-top:none}
 .crop-h.br{right:-15px;bottom:-15px}.crop-h.br::before{right:0;bottom:0;border-left:none;border-top:none}
+/* straighten: hide the box, show a full rule-of-thirds grid over the WYSIWYG result */
+.crop.tilt .crop-box{display:none}
+.crop-grid{position:absolute;inset:0;pointer-events:none;display:none;opacity:.4;
+  background:
+   linear-gradient(90deg,transparent calc(33.33% - .5px),#fff calc(33.33% - .5px),#fff calc(33.33% + .5px),transparent calc(33.33% + .5px)),
+   linear-gradient(90deg,transparent calc(66.66% - .5px),#fff calc(66.66% - .5px),#fff calc(66.66% + .5px),transparent calc(66.66% + .5px)),
+   linear-gradient(0deg,transparent calc(33.33% - .5px),#fff calc(33.33% - .5px),#fff calc(33.33% + .5px),transparent calc(33.33% + .5px)),
+   linear-gradient(0deg,transparent calc(66.66% - .5px),#fff calc(66.66% - .5px),#fff calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+.crop.tilt .crop-grid{display:block}
 /* single-adjustment slider (reused by the tool-edit view) */
 .range{position:relative;height:26px;display:flex;align-items:center}
 .range .track{position:absolute;left:0;right:0;height:4px;border-radius:3px;background:var(--line2)}
@@ -198,6 +207,14 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   white-space:nowrap;background:var(--panel);border:1px solid var(--line);color:var(--txt2);cursor:pointer;transition:.15s}
 .rchip:hover{border-color:var(--line2);color:var(--txt)}
 .rchip.on{background:var(--accent);color:var(--ink);border-color:var(--accent)}
+/* crop dock: ratio chips row + straighten slider row */
+.ed-rail.cropedit{flex-direction:column;align-items:stretch;gap:9px;min-height:0;padding:10px 14px}
+.crop-chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.crop-chips::-webkit-scrollbar{display:none}
+.crop-straight{display:flex;align-items:center;gap:11px}
+.crop-straight .range{flex:1}
+.cs-lab{font-size:12px;font-weight:600;color:var(--txt2);white-space:nowrap}
+.cs-val{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--txt);min-width:38px;text-align:right}
 .tchip .tico{display:grid;place-items:center;height:24px;color:var(--txt2);transition:color .15s}
 .tchip .tlabel{font-size:12px;font-weight:600;white-space:nowrap;line-height:1.1}
 .tchip.act{border-color:var(--accent)}
@@ -297,6 +314,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
     <canvas id="pvCanvas" role="img" aria-label="Aperçu de la recette appliquée à la photo"></canvas>
     <!-- crop overlay (just the adjustable box; ratio/apply controls live in the dock) -->
     <div class="crop" id="crop" hidden>
+      <div class="crop-grid" aria-hidden="true"></div>
       <div class="crop-box" id="cropBox">
         <span class="crop-h tl" data-c="tl"></span>
         <span class="crop-h tr" data-c="tr"></span>
@@ -482,7 +500,12 @@ function renderRecipe(src,P,A,canvas,w,h,opts){
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   const ready=src&&(src.naturalWidth||src.videoWidth||src.width);
   if(!ready){ctx.fillStyle='#151515';ctx.fillRect(0,0,w,h);return;}
-  if(opts&&opts.crop){const c=opts.crop;ctx.drawImage(src,c.sx,c.sy,c.sw,c.sh,0,0,w,h);}
+  if(opts&&opts.crop){const c=opts.crop;
+    if(c.rot){                                   // straighten: rotate the source about the crop centre
+      const ccx=c.sx+c.sw/2, ccy=c.sy+c.sh/2, scl=w/c.sw;
+      ctx.save();ctx.translate(w/2,h/2);ctx.scale(scl,scl);ctx.rotate(c.rot);ctx.drawImage(src,-ccx,-ccy);ctx.restore();
+    } else ctx.drawImage(src,c.sx,c.sy,c.sw,c.sh,0,0,w,h);
+  }
   else if(opts&&opts.mirror){ctx.save();ctx.translate(w,0);ctx.scale(-1,1);drawCover(ctx,src,w,h);ctx.restore();}
   else drawCover(ctx,src,w,h);
   const id=ctx.getImageData(0,0,w,h),d=id.data;
@@ -709,7 +732,7 @@ function gatherEdit(){return {presetName:(cur&&cur._i>=0)?cur.name:'', vals:{...
 function makeThumb(){
   if(!userImg)return null;
   const IW=userImg.naturalWidth||userImg.width||3, IH=userImg.naturalHeight||userImg.height||2;
-  const reg=cropN?{sx:cropN.x*IW,sy:cropN.y*IH,sw:cropN.w*IW,sh:cropN.h*IH}:{sx:0,sy:0,sw:IW,sh:IH};
+  const reg=cropN?cropRegion(cropN):{sx:0,sy:0,sw:IW,sh:IH};
   let w=reg.sw,h=reg.sh,m=Math.max(w,h),cap=480;if(m>cap){const s=cap/m;w*=s;h*=s;}
   const cv=document.createElement('canvas');
   renderRecipe(userImg,cur,vals,cv,Math.max(1,Math.round(w)),Math.max(1,Math.round(h)),{crop:reg});
@@ -771,7 +794,7 @@ let toolK=null, toolEntry=0;  // adjustment currently edited (single-slider), an
 function renderDock(){renderRail();renderMenu();}
 function renderRail(){
   const rail=$('#edRail');if(!rail)return;rail.className='ed-rail';rail.innerHTML='';
-  if(cropMode){rail.classList.add('scroller');buildCropRatios(rail);return;}
+  if(cropMode){rail.classList.add('cropedit');buildCropControls(rail);return;}
   if(toolK){rail.classList.add('editing');buildToolSlider(rail);return;}
   rail.classList.add('scroller');
   if(edMode==='presets')buildPresetRail(rail);else buildToolChips(rail);
@@ -892,9 +915,11 @@ function paintPreview(){
     // render the (optionally cropped) region at its own aspect so it shows whole (contain)
     const src=userImg||baseImg;
     const IW=src.naturalWidth||src.width||3, IH=src.naturalHeight||src.height||2;
-    const reg=(cropN&&!cropMode)
-      ? {sx:cropN.x*IW,sy:cropN.y*IH,sw:cropN.w*IW,sh:cropN.h*IH}
-      : {sx:0,sy:0,sw:IW,sh:IH};
+    // crop mode: WYSIWYG result when straightening (rot≠0), else full image (box overlays);
+    // outside crop mode: the applied crop.
+    let reg;
+    if(cropMode) reg=(cropDraft&&cropDraft.rot)?cropRegion(cropDraft):{sx:0,sy:0,sw:IW,sh:IH};
+    else reg=cropN?cropRegion(cropN):{sx:0,sy:0,sw:IW,sh:IH};
     let w=reg.sw, h=reg.sh, m=Math.max(w,h), cap=1100;
     if(m>cap){const s=cap/m;w*=s;h*=s;}
     renderRecipe(src, cur, vals, pvCanvas, Math.round(w), Math.round(h), {crop:reg});});
@@ -954,6 +979,24 @@ const CROP_RATIOS=[
   {k:'9:16',label:'9:16',   r:9/16},
 ];
 function cropSrcWH(){const s=userImg||baseImg;return [s.naturalWidth||s.width||3, s.naturalHeight||s.height||2];}
+// turn a normalised crop {x,y,w,h,rot(deg)} into a source-px region {sx,sy,sw,sh,rot(rad)};
+// when rotated, auto-zoom + clamp so the tilted crop always stays inside the image (no empty corners)
+function cropRegion(cn){
+  const [IW,IH]=cropSrcWH(), rot=(cn.rot||0)*Math.PI/180;
+  let cx=(cn.x+cn.w/2)*IW, cy=(cn.y+cn.h/2)*IH, hw=cn.w*IW/2, hh=cn.h*IH/2;
+  if(rot){
+    const c=Math.abs(Math.cos(rot)), s=Math.abs(Math.sin(rot));
+    let bx=hw*c+hh*s, by=hw*s+hh*c;                  // bounding half-extents of the tilted rect
+    const k=Math.min(1,(IW/2)/bx,(IH/2)/by);          // shrink to fit
+    hw*=k;hh*=k;bx*=k;by*=k;
+    cx=Math.min(Math.max(cx,bx),IW-bx);               // keep the tilted rect inside the image
+    cy=Math.min(Math.max(cy,by),IH-by);
+  }else{
+    hw=Math.min(hw,IW/2);hh=Math.min(hh,IH/2);
+    cx=Math.min(Math.max(cx,hw),IW-hw);cy=Math.min(Math.max(cy,hh),IH-hh);
+  }
+  return {sx:cx-hw,sy:cy-hh,sw:2*hw,sh:2*hh,rot};
+}
 // normalised aspect (w/h in 0..1 image space) for an output ratio R = outW/outH
 function arnFor(r){if(r==null)return null;const [IW,IH]=cropSrcWH();const R=(r==='orig')?(IW/IH):r;return R*IH/IW;}
 // displayed image rect inside #preview (object-fit: contain)
@@ -967,11 +1010,37 @@ function layoutCropBox(){
   b.style.left=(R.left+c.x*R.w)+'px';b.style.top=(R.top+c.y*R.h)+'px';
   b.style.width=(c.w*R.w)+'px';b.style.height=(c.h*R.h)+'px';
 }
-function buildCropRatios(rail){
-  const frag=document.createDocumentFragment();
+function buildCropControls(rail){
+  // ratio chips
+  const chips=el('div','crop-chips');
   CROP_RATIOS.forEach(c=>{const b=el('button','rchip');b.textContent=c.label;b.dataset.k=c.k;
-    b.setAttribute('role','radio');b.onclick=()=>setCropRatio(c.k);frag.appendChild(b);});
-  rail.appendChild(frag);markCropRatios();
+    b.setAttribute('role','radio');b.onclick=()=>setCropRatio(c.k);chips.appendChild(b);});
+  rail.appendChild(chips);
+  // straighten slider
+  const row=el('div','crop-straight');
+  const lab=el('span','cs-lab');lab.textContent='Redresser';
+  const range=el('div','range');
+  range.innerHTML='<div class="track"></div><div class="midmark" style="left:50%"></div><div class="fill" id="csFill"></div><input type="range" min="-45" max="45" step="1" id="csInput" aria-label="Redresser">';
+  const val=el('span','cs-val');val.id='csVal';
+  row.appendChild(lab);row.appendChild(range);row.appendChild(val);
+  rail.appendChild(row);
+  const inp=range.querySelector('input');inp.value=cropDraft.rot||0;
+  updStraighten();
+  inp.addEventListener('input',()=>setRot(parseFloat(inp.value)));
+  markCropRatios();
+}
+function updStraighten(){
+  const v=cropDraft.rot||0, f=$('#csFill'); if(!f)return;
+  $('#csVal').textContent=(v>0?'+':'')+v+'°';
+  const pct=(v+45)/90*100;
+  if(v>=0){f.style.left='50%';f.style.width=(pct-50)+'%';}else{f.style.left=pct+'%';f.style.width=(50-pct)+'%';}
+  f.style.background=v?'var(--pos)':'var(--neg)';
+}
+function setRot(v){
+  cropDraft.rot=v;
+  $('#crop').classList.toggle('tilt',!!v);
+  updStraighten();paintPreview();
+  if(!v)requestAnimationFrame(layoutCropBox);   // box returns when level
 }
 function markCropRatios(){document.querySelectorAll('#edRail .rchip').forEach(b=>{
   const on=b.dataset.k===cropARkey;b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
@@ -987,9 +1056,9 @@ function setCropRatio(key){
   if(cropARn){                                   // snap to the largest box of this ratio, kept around the current centre
     const cx=cropDraft.x+cropDraft.w/2, cy=cropDraft.y+cropDraft.h/2;
     let w=1,h=w/cropARn; if(h>1){h=1;w=h*cropARn;}
-    cropDraft={x:clamp(cx-w/2,0,1-w),y:clamp(cy-h/2,0,1-h),w,h};
+    cropDraft={x:clamp(cx-w/2,0,1-w),y:clamp(cy-h/2,0,1-h),w,h,rot:cropDraft.rot};
   }
-  layoutCropBox();
+  if(cropDraft.rot)paintPreview(); else layoutCropBox();
 }
 function resizeCropCorner(corner,s,dnx,dny){
   const MIN=0.07;
@@ -1016,6 +1085,7 @@ function resizeCropCorner(corner,s,dnx,dny){
 (function cropDrag(){
   const ov=$('#crop');let active=null;
   ov.addEventListener('pointerdown',e=>{
+    if(cropDraft&&cropDraft.rot)return;            // no box drag while straightening (WYSIWYG result)
     const h=e.target.closest('.crop-h');
     const box=$('#cropBox').getBoundingClientRect();
     const inBox=e.clientX>=box.left&&e.clientX<=box.right&&e.clientY>=box.top&&e.clientY<=box.bottom;
@@ -1035,17 +1105,19 @@ function resizeCropCorner(corner,s,dnx,dny){
 })();
 function enterCrop(){
   if(!cur)return;
-  cropMode=true;toolK=null;cropDraft=cropN?{...cropN}:{x:0,y:0,w:1,h:1};
+  cropMode=true;toolK=null;cropDraft=cropN?{...cropN}:{x:0,y:0,w:1,h:1,rot:0};
+  if(cropDraft.rot==null)cropDraft.rot=0;
   cropARkey='free';cropARn=null;
-  $('#crop').hidden=false;
-  renderDock();paintPreview();                   // ratio chips + ✕/✓ go into the dock; show whole image
+  $('#crop').hidden=false;$('#crop').classList.toggle('tilt',!!cropDraft.rot);
+  renderDock();paintPreview();                   // ratio chips + straighten + ✕/✓ in the dock
   requestAnimationFrame(layoutCropBox);
 }
-function exitCrop(){cropMode=false;$('#crop').hidden=true;}
+function exitCrop(){cropMode=false;$('#crop').hidden=true;$('#crop').classList.remove('tilt');}
 function cancelCrop(){exitCrop();renderDock();paintPreview();}
 function applyCrop(){
   const c=cropDraft;
-  cropN=(c.w>=0.999&&c.h>=0.999&&c.x<=0.001&&c.y<=0.001)?null:{...c};   // full = no crop
+  const full=c.w>=0.999&&c.h>=0.999&&c.x<=0.001&&c.y<=0.001&&!c.rot;
+  cropN=full?null:{...c};                          // full & level = no crop
   exitCrop();renderDock();paint();
 }
 window.addEventListener('resize',()=>{if(cropMode)layoutCropBox();});
@@ -1073,7 +1145,7 @@ async function exportImage(){
   const btn=$('#btnExport');btn.classList.add('busy');
   try{
     const IW=userImg.naturalWidth||1200, IH=userImg.naturalHeight||800;
-    const reg=cropN?{sx:cropN.x*IW,sy:cropN.y*IH,sw:cropN.w*IW,sh:cropN.h*IH}:{sx:0,sy:0,sw:IW,sh:IH};
+    const reg=cropN?cropRegion(cropN):{sx:0,sy:0,sw:IW,sh:IH};
     let w=reg.sw,h=reg.sh; const maxE=3200,m=Math.max(w,h);if(m>maxE){const s=maxE/m;w*=s;h*=s;}
     w=Math.round(w);h=Math.round(h);
     const cv=document.createElement('canvas');
