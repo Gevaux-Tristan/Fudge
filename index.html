@@ -69,32 +69,14 @@ header.top{
 .chip:hover{border-color:var(--line2)}
 .chip.on{background:var(--txt);color:var(--ink);border-color:var(--txt);font-weight:600}
 
-/* view-mode switch */
-.viewseg{display:flex;flex:none;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:3px}
-.viewseg button{width:32px;height:30px;border-radius:var(--r-sm);display:grid;place-items:center;color:var(--txt3);transition:.12s}
-.viewseg button:hover{color:var(--txt2)}
-.viewseg button.on{background:var(--panel2);color:var(--accent)}
-
-/* ---------- HOME: PHOTO LIBRARY (masonry) ---------- */
-.gallery{padding:6px 0 calc(var(--safe-b) + 96px)}
-/* CSS-columns masonry — each card keeps the imported photo's own ratio */
-.gallery.view-compact{column-count:3;column-gap:8px}
-.gallery.view-large{column-count:2;column-gap:10px}
-.gallery.view-list{column-count:1;column-gap:0}
-@media(min-width:560px){
-  .gallery.view-compact{column-count:4;column-gap:10px}
-  .gallery.view-large{column-count:3;column-gap:12px}
-}
-@media(min-width:880px){
-  .gallery.view-compact{column-count:6}
-  .gallery.view-large{column-count:4}
-  .gallery.view-list{column-count:2;column-gap:12px}
-}
+/* ---------- HOME: PHOTO LIBRARY (masonry, 3 columns) ---------- */
+.gallery{padding:6px 0 calc(var(--safe-b) + 96px);column-count:3;column-gap:8px}
+@media(min-width:560px){.gallery{column-count:4;column-gap:10px}}
+@media(min-width:880px){.gallery{column-count:6}}
 .lib-title{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--txt2)}
 .pcard{display:block;width:100%;margin:0 0 8px;overflow:hidden;cursor:pointer;background:var(--panel);
   break-inside:avoid;-webkit-column-break-inside:avoid;
   outline:0 solid var(--line2);transition:opacity .15s,outline-width .12s}   /* no border-radius */
-.gallery.view-large .pcard,.gallery.view-list .pcard{margin-bottom:12px}
 .pcard:hover{outline-width:2px}
 .pcard:active{opacity:.85}
 .pcard img{width:100%;height:auto;display:block}      /* natural ratio, no crop, no radius */
@@ -253,22 +235,11 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
   <header class="top">
     <div class="toolbar">
       <span class="lib-title">Mes photos</span>
-      <div class="viewseg" id="viewToggle" role="radiogroup" aria-label="Affichage de la bibliothèque">
-        <button data-v="compact" aria-label="Grille compacte" title="Grille compacte">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"></path></svg>
-        </button>
-        <button data-v="large" aria-label="Grandes cartes" title="Grandes cartes">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z"></path></svg>
-        </button>
-        <button data-v="list" aria-label="Liste" title="Liste">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zm0-9H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V5c0-.55-.45-1-1-1z"></path></svg>
-        </button>
-      </div>
     </div>
   </header>
 
   <main>
-    <div id="gallery" class="gallery view-large"></div>
+    <div id="gallery" class="gallery"></div>
   </main>
 </div>
 
@@ -570,7 +541,6 @@ function renderRecipe(src,P,A,canvas,w,h,opts){
 
 //// ---------- STATE ----------
 let RECIPES=[], RAIL=[];
-let VIEW=['compact','large','list'].includes(localStorage.getItem('fotn_view'))?localStorage.getItem('fotn_view'):'large';
 let cur=null;            // preset currently applied in the editor
 let vals={};             // live adjustment values
 let userImg=null, userURL=null;   // current photo (Image) + its object URL
@@ -638,22 +608,6 @@ function photoCard(it){
   c.appendChild(img);
   return c;
 }
-
-//// ---------- VIEW MODE ----------
-function setView(v){
-  if(!['compact','large','list'].includes(v))v='large';
-  VIEW=v;localStorage.setItem('fotn_view',v);
-  $('#gallery').className='gallery view-'+v;     // CSS reflows the existing thumbnails
-  document.querySelectorAll('#viewToggle button').forEach(b=>{
-    const on=b.dataset.v===v;b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');b.tabIndex=on?0:-1;
-  });
-}
-(function initViewToggle(){
-  const vt=$('#viewToggle');vt.setAttribute('data-rg','view');
-  vt.querySelectorAll('button').forEach(b=>{b.setAttribute('role','radio');b.setAttribute('data-rv',b.dataset.v);b.onclick=()=>setView(b.dataset.v);});
-  setView(VIEW);
-  wireRadios(vt);
-})();
 
 //// ---------- EDITOR ----------
 // Universal photo adjustments layered on top of the chosen preset (neutral = 0).
@@ -1106,7 +1060,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(toolK)canc
   const cv=document.getElementById('bgfx');if(!cv)return;
   const ctx=cv.getContext('2d');if(!ctx)return;
   const PX=3, SPEED=0.6, TAU=6.28318;
-  const FR=20, FA=40;                 // front speck: grey level + alpha (subtle on white)
+  const FR=0, FA=255;                 // front speck: pure black on white → 100% B&W dithering
   const BAYER=[0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,
     60,28,52,20,62,30,54,22,3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,
     15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21];
