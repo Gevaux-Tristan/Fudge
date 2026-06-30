@@ -71,12 +71,34 @@ header.top{
 .gallery{padding:6px 0 calc(var(--safe-b) + 96px);column-count:3;column-gap:8px}
 @media(min-width:560px){.gallery{column-count:4;column-gap:10px}}
 @media(min-width:880px){.gallery{column-count:6}}
-.pcard{display:block;width:100%;margin:0 0 8px;overflow:hidden;cursor:pointer;background:var(--panel);
-  break-inside:avoid;-webkit-column-break-inside:avoid;
+.pcard{position:relative;display:block;width:100%;margin:0 0 8px;overflow:hidden;cursor:pointer;background:var(--panel);
+  break-inside:avoid;-webkit-column-break-inside:avoid;-webkit-touch-callout:none;user-select:none;
   outline:0 solid var(--line2);transition:opacity .15s,outline-width .12s}   /* no border-radius */
 .pcard:hover{outline-width:2px}
 .pcard:active{opacity:.85}
-.pcard img{width:100%;height:auto;display:block}      /* natural ratio, no crop, no radius */
+.pcard img{width:100%;height:auto;display:block;pointer-events:none}   /* natural ratio, no crop, no radius */
+/* long-press → black overlay + white trash to delete in place */
+.pcard .pdel{position:absolute;inset:0;z-index:2;display:none;place-items:center;background:rgba(0,0,0,.62)}
+.pcard.arm .pdel{display:grid;animation:pdelIn .14s ease}
+@keyframes pdelIn{from{opacity:0}to{opacity:1}}
+.pcard .pdel-btn{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.35)}
+.pcard .pdel-btn:active{transform:scale(.92)}
+
+/* app-styled confirm dialog (no native modals) */
+.cscrim{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:24px;
+  background:rgba(0,0,0,.45);backdrop-filter:blur(3px);opacity:0;transition:opacity .2s}
+.cscrim.show{opacity:1}
+.cbox{width:100%;max-width:320px;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:20px 18px 16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.4);transform:translateY(8px);transition:transform .2s}
+.cscrim.show .cbox{transform:none}
+.cmsg{margin:0 0 16px;font-size:15px;line-height:1.45;color:var(--txt);text-align:center}
+.crow{display:flex;gap:10px}
+.cbtn{flex:1;padding:12px;border-radius:var(--r-md);font-size:14px;font-weight:600;
+  background:var(--panel2);border:1px solid var(--line2);color:var(--txt);transition:filter .15s,background .15s}
+.cbtn:hover{background:var(--line2)}
+.cbtn.danger{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+.cbtn.danger:hover{background:var(--accent);filter:brightness(1.1)}
 
 /* ---------- DETAIL / EDITOR ---------- */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);opacity:0;
@@ -582,17 +604,48 @@ function renderLibrary(){
   library.forEach(it=>frag.appendChild(photoCard(it)));
   g.appendChild(frag);
 }
+const TRASH_ICON='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z';
+let lpTimer=0, lpArmed=null, lpSuppress=false, lpX=0, lpY=0;
+function disarmCard(){if(lpArmed){lpArmed.classList.remove('arm');lpArmed=null;}}
+function removePhoto(it){
+  disarmCard();
+  idbDelete(it.id).then(()=>{library=library.filter(x=>x.id!==it.id);renderLibrary();toast('Photo supprimée');})
+                 .catch(()=>toast('Suppression impossible'));
+}
 function photoCard(it){
   const c=el('div','pcard');c.tabIndex=0;c.setAttribute('role','button');c.setAttribute('aria-label','Ouvrir la photo');
-  c.onclick=()=>openItem(it);
-  c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openItem(it);}};
-  const img=el('img');img.alt='';img.loading='lazy';
+  const img=el('img');img.alt='';img.loading='lazy';img.draggable=false;
   // ratio comes from the thumbnail's real pixels (matches the bitmap → no stretch); else natural
   if(it.tw&&it.th)img.style.aspectRatio=it.tw+'/'+it.th;
   if(it.thumb)img.src=it.thumb;
   c.appendChild(img);
+  // long-press delete overlay
+  const del=el('div','pdel');
+  const dbtn=el('button','pdel-btn');dbtn.setAttribute('aria-label','Supprimer la photo');dbtn.innerHTML=svgIcon(TRASH_ICON,30);
+  dbtn.onclick=e=>{e.stopPropagation();removePhoto(it);};
+  del.appendChild(dbtn);c.appendChild(del);
+  // long-press detection (hold ~500ms without moving → arm the delete overlay)
+  c.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.pdel-btn'))return;
+    lpX=e.clientX;lpY=e.clientY;clearTimeout(lpTimer);
+    lpTimer=setTimeout(()=>{disarmCard();lpArmed=c;c.classList.add('arm');lpSuppress=true;},500);
+  });
+  c.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-lpX)>10||Math.abs(e.clientY-lpY)>10)clearTimeout(lpTimer);});
+  c.addEventListener('pointerup',()=>clearTimeout(lpTimer));
+  c.addEventListener('pointercancel',()=>clearTimeout(lpTimer));
+  c.addEventListener('contextmenu',e=>e.preventDefault());
+  c.onclick=e=>{
+    if(e.target.closest('.pdel-btn'))return;          // trash handled separately
+    if(lpSuppress){lpSuppress=false;e.preventDefault();return;}   // ignore the release-click after long-press
+    if(c.classList.contains('arm')){disarmCard();return;}          // tap the armed card → dismiss
+    openItem(it);
+  };
+  c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openItem(it);}};
   return c;
 }
+// dismiss the delete overlay on outside tap or scroll
+document.addEventListener('pointerdown',e=>{if(lpArmed&&!e.target.closest('.pcard.arm'))disarmCard();},true);
+window.addEventListener('scroll',disarmCard,true);
 
 //// ---------- EDITOR ----------
 // Universal photo adjustments layered on top of the chosen preset (neutral = 0).
@@ -664,9 +717,9 @@ function saveItem(silent){
   return idbPut(currentItem).then(()=>{renderLibrary();if(!silent)toast('Modifications enregistrées');})
                             .catch(()=>{if(!silent)toast('Échec de l’enregistrement');});
 }
-function deleteCurrent(){
+async function deleteCurrent(){
   if(!currentItem)return;
-  if(!confirm('Supprimer cette photo de la bibliothèque ?'))return;
+  if(!await appConfirm('Supprimer cette photo ?'))return;
   const id=currentItem.id;
   idbDelete(id).then(()=>{library=library.filter(x=>x.id!==id);renderLibrary();teardownEditor();toast('Photo supprimée');});
 }
@@ -1034,6 +1087,25 @@ $('#btnExport').onclick=exportImage;
 
 //// toast
 let tT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),1800);}
+
+//// app-styled confirm (replaces native confirm())
+function appConfirm(message,okLabel){
+  return new Promise(res=>{
+    const sc=el('div','cscrim'), box=el('div','cbox');
+    const p=el('p','cmsg');p.textContent=message;
+    const row=el('div','crow');
+    const cancel=el('button','cbtn');cancel.textContent='Annuler';
+    const ok=el('button','cbtn danger');ok.textContent=okLabel||'Supprimer';
+    row.appendChild(cancel);row.appendChild(ok);box.appendChild(p);box.appendChild(row);sc.appendChild(box);
+    document.body.appendChild(sc);requestAnimationFrame(()=>sc.classList.add('show'));
+    function close(v){sc.classList.remove('show');document.removeEventListener('keydown',onKey);setTimeout(()=>sc.remove(),200);res(v);}
+    function onKey(e){if(e.key==='Escape')close(false);}
+    cancel.onclick=()=>close(false);ok.onclick=()=>close(true);
+    sc.onclick=e=>{if(e.target===sc)close(false);};
+    document.addEventListener('keydown',onKey);
+    ok.focus();
+  });
+}
 
 // close on Esc (crop overlay first, then the editor)
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(toolK)cancelTool();else if(cropMode)cancelCrop();else if(cur)closeEditor();});
