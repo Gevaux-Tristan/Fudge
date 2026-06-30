@@ -1162,6 +1162,11 @@ const bgfx=ditherFx(document.getElementById('bgfx'));
 bgfx.start();
 document.addEventListener('visibilitychange',()=>{document.hidden?bgfx.stop():bgfx.start();});
 window.__bgfx={start:bgfx.resume, stop:bgfx.pause};   // editor pauses it while it covers the screen
+
+//// ---------- PWA: offline + instant loads via service worker ----------
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+}
 </script>
 </body>
 </html>
