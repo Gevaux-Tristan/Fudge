@@ -1023,25 +1023,25 @@ function geoSource(g, cap){
   if(g&&(g.kv||g.kh)){const w=warpKeystone(base,g.kv,g.kh,cap||1500);return {src:w,IW:w.width,IH:w.height};}
   return {src:base,IW:base.naturalWidth||base.width||3,IH:base.naturalHeight||base.height||2};
 }
-// Auto-level: estimate the dominant edge tilt (deviation from horizontal/vertical) → straighten angle.
+// Auto-level: magnitude²-weighted mean tilt of near-axis edges → straighten angle.
 function autoDeskew(img){
   let IW=img.naturalWidth||img.width||3, IH=img.naturalHeight||img.height||2;
-  let w=320,h=Math.round(320*IH/IW); if(IH>IW){h=320;w=Math.round(320*IW/IH);}
+  let w=360,h=Math.round(360*IH/IW); if(IH>IW){h=360;w=Math.round(360*IW/IH);}
   w=Math.max(8,w);h=Math.max(8,h);
   const cv=document.createElement('canvas');cv.width=w;cv.height=h;
   const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);
   let d;try{d=ctx.getImageData(0,0,w,h).data;}catch(e){return 0;}
   const g=i=>{const o=i*4;return 0.299*d[o]+0.587*d[o+1]+0.114*d[o+2];};
-  const bins=new Float64Array(91);
+  let sumW=0,sumA=0;
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
     const i=y*w+x, gx=g(i+1)-g(i-1), gy=g(i+w)-g(i-w), mag=Math.hypot(gx,gy);
-    if(mag<24)continue;
+    if(mag<20)continue;
     let a=Math.atan2(gy,gx)*180/Math.PI; a=((a%90)+90)%90; const dev=a<=45?a:a-90;
-    bins[Math.round(dev)+45]+=mag;
+    if(Math.abs(dev)>25)continue;                 // only near-axis lines vote
+    const wgt=mag*mag; sumW+=wgt; sumA+=wgt*dev;
   }
-  let bi=45,bv=-1; for(let i=0;i<91;i++)if(bins[i]>bv){bv=bins[i];bi=i;}
-  let dev=bi-45; if(Math.abs(dev)>20)dev=0;     // ignore implausible tilts
-  return -dev;
+  if(sumW<=0)return 0;
+  return Math.max(-30,Math.min(30, -(sumA/sumW)*0.78));   // 0.78 calibration from tests
 }
 // turn a normalised crop {x,y,w,h,rot(deg)} into a source-px region {sx,sy,sw,sh,rot(rad)};
 // when rotated, auto-zoom + clamp so the tilted crop always stays inside the image (no empty corners)
