@@ -1,5 +1,5 @@
 // fotn service worker — offline app shell + asset cache
-const CACHE = 'fotn-v2';
+const CACHE = 'fotn-v3';
 const CORE = [
   './', './index.html', './manifest.webmanifest',
   './generic.jpg?v=2',
@@ -32,10 +32,11 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Page loads: network-first (fresh when online), fall back to the cached shell offline.
+  // Page loads: always fetch a FRESH copy (bypass the HTTP cache) so updates show
+  // immediately; fall back to the cached shell only when offline.
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(res => {
+      fetch('./index.html', {cache: 'reload'}).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put('./index.html', copy));
         return res;
