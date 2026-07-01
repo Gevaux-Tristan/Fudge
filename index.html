@@ -78,13 +78,48 @@ header.top{
 .pcard:hover{transform:translateY(-2px)}
 .pcard:active{opacity:.85}
 .pcard img{width:100%;height:auto;display:block;pointer-events:none}   /* natural ratio, no crop, no radius */
-/* long-press → black overlay + white trash to delete in place */
-.pcard .pdel{position:absolute;inset:0;z-index:2;display:none;place-items:center;background:rgba(0,0,0,.62)}
-.pcard.arm .pdel{display:grid;animation:pdelIn .14s ease}
+/* long-press → multi-select mode (checkbox per card) */
+.pcard .pcheck{position:absolute;top:8px;right:8px;z-index:2;width:26px;height:26px;border-radius:50%;
+  display:none;place-items:center;color:#fff;background:rgba(0,0,0,.32);
+  box-shadow:0 0 0 2px rgba(255,255,255,.92);transition:background .12s,box-shadow .12s}
+.gallery.selecting .pcheck{display:grid;animation:pdelIn .14s ease}
+.gallery.selecting .pcard{cursor:default}
+.gallery.selecting .pcard:hover{transform:none}
 @keyframes pdelIn{from{opacity:0}to{opacity:1}}
-.pcard .pdel-btn{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;color:#fff;
-  background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.35)}
-.pcard .pdel-btn:active{transform:scale(.92)}
+.pcard .pcheck svg{opacity:0;transition:opacity .1s}
+.pcard.sel .pcheck{background:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.pcard.sel .pcheck svg{opacity:1}
+.pcard.sel img{opacity:.8}
+.pcard.sel{outline:3px solid var(--accent);outline-offset:-3px}
+
+/* selection action bar (bottom) */
+.selbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:none;align-items:center;gap:10px;
+  padding:10px 14px calc(10px + var(--safe-b));background:var(--bg);
+  box-shadow:0 -12px 34px -14px rgba(0,0,0,.3)}
+.selbar.show{display:flex}
+body.selmode .fabs{display:none}
+.selbar .selx{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;
+  background:var(--panel2);color:var(--txt);border:none;cursor:pointer}
+.selbar .selx:active{transform:scale(.92)}
+.selbar .selcount{font-weight:700;font-size:15px;color:var(--txt);white-space:nowrap}
+.selbar .selspacer{flex:1}
+.selbar .selact{display:inline-flex;align-items:center;gap:7px;padding:11px 15px;border-radius:999px;
+  font-size:14px;font-weight:600;border:none;cursor:pointer;transition:filter .12s,opacity .12s}
+.selbar .selact:active{filter:brightness(.94)}
+.selbar .selact svg{width:18px;height:18px}
+.selbar .selact.exp{background:var(--accent);color:var(--ink)}
+.selbar .selact.del{background:var(--panel2);color:var(--txt)}
+.selbar .selact:disabled{opacity:.4;pointer-events:none}
+
+/* full-screen busy overlay (batch export progress) */
+.busyov{position:fixed;inset:0;z-index:320;display:grid;place-items:center;padding:24px;
+  background:rgba(255,255,255,.72);backdrop-filter:blur(4px);opacity:0;transition:opacity .18s}
+.busyov.show{opacity:1}
+.busybox{display:grid;justify-items:center;gap:14px}
+.busyspin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line2);border-top-color:var(--accent);
+  animation:busyspin .8s linear infinite}
+@keyframes busyspin{to{transform:rotate(360deg)}}
+.busytxt{font-size:14px;font-weight:600;color:var(--txt)}
 
 /* app-styled confirm dialog (no native modals) */
 .cscrim{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:24px;
@@ -286,6 +321,20 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
   </button>
   <button class="fab" id="fabCam" title="Prendre une photo" aria-label="Prendre une photo">
     <svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg>
+  </button>
+</div>
+<!-- multi-select action bar (shown after a long-press on the gallery) -->
+<div class="selbar" id="selbar" role="toolbar" aria-label="Sélection multiple">
+  <button class="selx" id="selCancel" aria-label="Annuler la sélection">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.3 5.71 12 12l6.3 6.29-1.42 1.42L12 14.41l-6.29 6.3-1.42-1.42L10.59 12 4.3 5.71 5.71 4.29 12 10.59l6.29-6.3z"></path></svg>
+  </button>
+  <span class="selcount" id="selCount">0</span>
+  <span class="selspacer"></span>
+  <button class="selact del" id="selDelete" aria-label="Supprimer la sélection">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>Supprimer
+  </button>
+  <button class="selact exp" id="selExport" aria-label="Exporter la sélection">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>Exporter
   </button>
 </div>
 <!-- native system camera (capture) + library import file inputs -->
@@ -643,48 +692,139 @@ function renderLibrary(){
   library.forEach(it=>frag.appendChild(photoCard(it)));
   g.appendChild(frag);
 }
-const TRASH_ICON='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z';
-let lpTimer=0, lpArmed=null, lpSuppress=false, lpX=0, lpY=0;
-function disarmCard(){if(lpArmed){lpArmed.classList.remove('arm');lpArmed=null;}}
-function removePhoto(it){
-  disarmCard();
-  idbDelete(it.id).then(()=>{library=library.filter(x=>x.id!==it.id);renderLibrary();toast('Photo supprimée');})
-                 .catch(()=>toast('Suppression impossible'));
+const CHECK_ICON='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
+let lpTimer=0, lpX=0, lpY=0, lpSuppress=false;
+
+// ---- multi-select mode (long-press to enter; batch export / delete) ----
+let selectMode=false; const selected=new Set();
+function updateSelBar(){
+  const n=selected.size;
+  $('#selCount').textContent=n+(n>1?' sélectionnées':' sélectionnée');
+  $('#selExport').disabled=!n;$('#selDelete').disabled=!n;
+}
+function syncSelCards(){document.querySelectorAll('.pcard').forEach(c=>c.classList.toggle('sel',selected.has(c.dataset.id)));}
+function enterSelect(seedId){
+  selectMode=true;selected.clear();if(seedId!=null)selected.add(seedId);
+  document.body.classList.add('selmode');
+  $('#gallery').classList.add('selecting');
+  $('#selbar').classList.add('show');
+  syncSelCards();updateSelBar();
+}
+function exitSelect(){
+  if(!selectMode)return;
+  selectMode=false;selected.clear();
+  document.body.classList.remove('selmode');
+  $('#gallery').classList.remove('selecting');
+  $('#selbar').classList.remove('show');
+  syncSelCards();
+}
+function toggleSel(it,card){
+  if(selected.has(it.id))selected.delete(it.id);else selected.add(it.id);
+  card.classList.toggle('sel',selected.has(it.id));
+  if(!selected.size){exitSelect();return;}
+  updateSelBar();
 }
 function photoCard(it){
-  const c=el('div','pcard');c.tabIndex=0;c.setAttribute('role','button');c.setAttribute('aria-label','Ouvrir la photo');
+  const c=el('div','pcard');c.tabIndex=0;c.dataset.id=it.id;c.setAttribute('role','button');c.setAttribute('aria-label','Ouvrir la photo');
   const img=el('img');img.alt='';img.loading='lazy';img.draggable=false;
   // ratio comes from the thumbnail's real pixels (matches the bitmap → no stretch); else natural
   if(it.tw&&it.th)img.style.aspectRatio=it.tw+'/'+it.th;
   if(it.thumb)img.src=it.thumb;
   c.appendChild(img);
-  // long-press delete overlay
-  const del=el('div','pdel');
-  const dbtn=el('button','pdel-btn');dbtn.setAttribute('aria-label','Supprimer la photo');dbtn.innerHTML=svgIcon(TRASH_ICON,30);
-  dbtn.onclick=e=>{e.stopPropagation();removePhoto(it);};
-  del.appendChild(dbtn);c.appendChild(del);
-  // long-press detection (hold ~500ms without moving → arm the delete overlay)
+  // selection checkbox (only visible while a selection is active)
+  const chk=el('div','pcheck');chk.innerHTML=svgIcon(CHECK_ICON,18);c.appendChild(chk);
+  if(selected.has(it.id))c.classList.add('sel');
+  // long-press (hold ~500ms without moving) → enter multi-select mode
   c.addEventListener('pointerdown',e=>{
-    if(e.target.closest('.pdel-btn'))return;
+    if(e.button&&e.button!==0)return;
     lpX=e.clientX;lpY=e.clientY;clearTimeout(lpTimer);
-    lpTimer=setTimeout(()=>{disarmCard();lpArmed=c;c.classList.add('arm');lpSuppress=true;},500);
+    lpTimer=setTimeout(()=>{if(!selectMode){enterSelect(it.id);lpSuppress=true;}},500);
   });
   c.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-lpX)>10||Math.abs(e.clientY-lpY)>10)clearTimeout(lpTimer);});
   c.addEventListener('pointerup',()=>clearTimeout(lpTimer));
   c.addEventListener('pointercancel',()=>clearTimeout(lpTimer));
   c.addEventListener('contextmenu',e=>e.preventDefault());
   c.onclick=e=>{
-    if(e.target.closest('.pdel-btn'))return;          // trash handled separately
     if(lpSuppress){lpSuppress=false;e.preventDefault();return;}   // ignore the release-click after long-press
-    if(c.classList.contains('arm')){disarmCard();return;}          // tap the armed card → dismiss
+    if(selectMode){e.preventDefault();toggleSel(it,c);return;}     // in select mode → toggle
     openItem(it);
   };
-  c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openItem(it);}};
+  c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(selectMode)toggleSel(it,c);else openItem(it);}};
   return c;
 }
-// dismiss the delete overlay on outside tap or scroll
-document.addEventListener('pointerdown',e=>{if(lpArmed&&!e.target.closest('.pcard.arm'))disarmCard();},true);
-window.addEventListener('scroll',disarmCard,true);
+// ---- batch export / delete of the current selection ----
+$('#selCancel').onclick=exitSelect;
+$('#selDelete').onclick=deleteSelected;
+$('#selExport').onclick=exportSelected;
+async function deleteSelected(){
+  const ids=[...selected];if(!ids.length)return;
+  const ok=await appConfirm(ids.length>1?`Supprimer ${ids.length} photos ?`:'Supprimer cette photo ?');
+  if(!ok)return;
+  for(const id of ids){try{await idbDelete(id);}catch(e){}}
+  const gone=new Set(ids);library=library.filter(x=>!gone.has(x.id));
+  exitSelect();renderLibrary();
+  toast(ids.length>1?`${ids.length} photos supprimées`:'Photo supprimée');
+}
+async function exportSelected(){
+  const items=library.filter(x=>selected.has(x.id));
+  if(!items.length)return;
+  await exportBatch(items);
+}
+function nextFrame(){return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));}
+// render one library item (its saved look + adjustments + crop) to a JPEG blob, headless
+async function renderItemToBlob(it,maxE,nonce){
+  let r;try{r=await blobToImage(it.blob);}catch(e){return null;}
+  try{
+    const ed=it.edit||{};
+    const P=ed.presetName?(RECIPES.find(p=>p.name===ed.presetName)||ORIGINAL):ORIGINAL;
+    const A=Object.assign(neutralAdj(),ed.vals||{});
+    const g=ed.crop||null, base=r.img;
+    let src=base,IW=base.naturalWidth||base.width||3,IH=base.naturalHeight||base.height||2;
+    if(g&&(g.kv||g.kh)){const wI=warpKeystone(base,g.kv,g.kh,3600);src=wI;IW=wI.width;IH=wI.height;}
+    const reg=g?cropRegion(g,IW,IH):{sx:0,sy:0,sw:IW,sh:IH};
+    let w=reg.sw,h=reg.sh;const M=maxE||3200,m=Math.max(w,h);if(m>M){const s=M/m;w*=s;h*=s;}
+    w=Math.round(w);h=Math.round(h);
+    const cv=document.createElement('canvas');
+    renderRecipe(src,P,A,cv,w,h,{crop:reg});
+    const blob=await new Promise(res=>cv.toBlob(b=>res(b),'image/jpeg',0.94));
+    return {blob,name:uniqueName(P&&P.name,nonce)};
+  }finally{if(r&&r.url)URL.revokeObjectURL(r.url);}
+}
+function downloadFile(file){
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+async function exportBatch(items){
+  const ov=showBusy('Préparation…');
+  try{
+    const files=[];
+    for(let i=0;i<items.length;i++){
+      ov.set(`Rendu ${i+1}/${items.length}…`);await nextFrame();
+      const r=await renderItemToBlob(items[i],3200,1000+i);
+      if(r&&r.blob)files.push(new File([r.blob],r.name,{type:'image/jpeg'}));
+    }
+    if(!files.length){toast('Export impossible');return;}
+    // Prefer the native share sheet (on iOS: "Save N Images" straight to Photos)
+    if(navigator.canShare&&navigator.canShare({files})){
+      try{await navigator.share({files,title:'fotn'});exitSelect();return;}
+      catch(e){if(e&&e.name==='AbortError')return;}   // cancelled → stop; other error → fall back
+    }
+    // Fallback: sequential downloads
+    ov.set('Téléchargement…');await nextFrame();
+    for(let i=0;i<files.length;i++){downloadFile(files[i]);await new Promise(r=>setTimeout(r,350));}
+    exitSelect();
+    toast(files.length>1?`${files.length} photos exportées`:'Photo exportée');
+  }catch(e){toast('Export impossible');}
+  finally{hideBusy(ov);}
+}
+function showBusy(msg){
+  const sc=el('div','busyov'),b=el('div','busybox'),sp=el('div','busyspin'),t=el('div','busytxt');
+  t.textContent=msg||'';b.appendChild(sp);b.appendChild(t);sc.appendChild(b);document.body.appendChild(sc);
+  requestAnimationFrame(()=>sc.classList.add('show'));
+  return {el:sc,set(m){t.textContent=m;}};
+}
+function hideBusy(ov){if(ov&&ov.el){ov.el.classList.remove('show');setTimeout(()=>ov.el.remove(),200);}}
 
 //// ---------- EDITOR ----------
 // Universal photo adjustments layered on top of the chosen preset (neutral = 0).
@@ -1214,11 +1354,12 @@ $('#btnReset').onclick=()=>{if(cur){vals=neutralAdj();cropN=null;if(cropMode)exi
 //// EXPORT (bake the current look into the uploaded photo)
 function slugify(s){return (s||'recette').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
   .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'recette';}
-function uniqueName(){
+function uniqueName(pname,nonce){
   const d=new Date();const p=n=>String(n).padStart(2,'0');
   const stamp=`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
-  const rnd=Math.floor(1000+ (Date.now()%9000));
-  return `fotn_${slugify(cur&&cur.name)}_${stamp}-${rnd}.jpg`;
+  const rnd=(nonce!=null?nonce:Math.floor(1000+ (Date.now()%9000)));
+  const nm=(pname!==undefined?pname:(cur&&cur.name));
+  return `fotn_${slugify(nm)}_${stamp}-${rnd}.jpg`;
 }
 async function exportImage(){
   if(!userImg)return;
@@ -1266,7 +1407,7 @@ function appConfirm(message,okLabel){
 }
 
 // close on Esc (crop overlay first, then the editor)
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(toolK)cancelTool();else if(cropMode)cancelCrop();else if(cur)closeEditor();});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(toolK)cancelTool();else if(cropMode)cancelCrop();else if(cur)closeEditor();else if(selectMode)exitSelect();});
 
 //// ---------- DITHERED WAVE (ordered 8×8 Bayer, à la wave-1 shader) — reusable ----------
 function ditherFx(cv){
