@@ -1102,8 +1102,36 @@ function buildToolSlider(rail){
   rail.appendChild(val);rail.appendChild(range);
   const inp=range.querySelector('input');inp.value=vals[toolK];
   updToolSlider();
-  inp.addEventListener('input',()=>{vals[toolK]=parseFloat(inp.value);updToolSlider();paintLook(true);});   // draft while dragging
-  inp.addEventListener('change',()=>{vals[toolK]=parseFloat(inp.value);updToolSlider();paintLook(false);}); // full on release
+  const onInput =()=>{vals[toolK]=parseFloat(inp.value);updToolSlider();paintLook(true);};   // draft while dragging
+  const onCommit=()=>{vals[toolK]=parseFloat(inp.value);updToolSlider();paintLook(false);};  // full on release
+  inp.addEventListener('input',onInput);    // keyboard (arrows) still works
+  inp.addEventListener('change',onCommit);
+  attachRelativeSlider(inp,onInput,onCommit);
+}
+// VSCO-style RELATIVE dragging: touching anywhere keeps the current value; only the finger's
+// horizontal movement changes it (delta), so there's no jump-to-touch on the first contact.
+function attachRelativeSlider(inp,onInput,onCommit){
+  const mn=parseFloat(inp.min), mx=parseFloat(inp.max), st=parseFloat(inp.step)||1;
+  inp.style.touchAction='none';
+  let dragging=false, startX=0, startVal=0;
+  inp.addEventListener('pointerdown',e=>{
+    dragging=true; startX=e.clientX; startVal=parseFloat(inp.value)||0;
+    try{inp.setPointerCapture(e.pointerId);}catch(_){}
+    try{inp.focus({preventScroll:true});}catch(_){}
+    e.preventDefault();
+  });
+  inp.addEventListener('pointermove',e=>{
+    if(!dragging)return; e.preventDefault();
+    const rect=inp.getBoundingClientRect(); if(rect.width<=0)return;
+    const per=(mx-mn)/rect.width;                 // full track width spans the whole range
+    let v=startVal+(e.clientX-startX)*per;
+    v=Math.round(v/st)*st;
+    v=v<mn?mn:v>mx?mx:v;
+    if(v!==parseFloat(inp.value)){inp.value=v; onInput();}
+  });
+  const end=e=>{if(!dragging)return; dragging=false; try{inp.releasePointerCapture(e.pointerId);}catch(_){} onCommit();};
+  inp.addEventListener('pointerup',end);
+  inp.addEventListener('pointercancel',end);
 }
 function updToolSlider(){
   const a=SLIDER_BY_K[toolK], v=vals[toolK], f=$('#toolFill'), inp=$('#toolInput');
@@ -1320,7 +1348,9 @@ function geoSlider(label,key,min,max,unit){
     if(v>=0){fill.style.left='50%';fill.style.width=(pct-50)+'%';}else{fill.style.left=pct+'%';fill.style.width=(50-pct)+'%';}
     fill.style.background=v?'var(--pos)':'var(--neg)';};
   row._upd();
-  inp.addEventListener('input',()=>{cropDraft[key]=parseFloat(inp.value);row._upd();syncTransform();});
+  const apply=()=>{cropDraft[key]=parseFloat(inp.value);row._upd();syncTransform();};
+  inp.addEventListener('input',apply);                 // keyboard
+  attachRelativeSlider(inp,apply,apply);               // VSCO-style relative drag (no jump-to-touch)
   return row;
 }
 function syncTransform(){
