@@ -503,10 +503,12 @@ function buildOps(P,A){
   const warm=((P.temp||0)*k+(A.temperature||0))/100;
   const grn =((P.tint||0)*k+(A.tint||0))/100;
   const rG=1+0.22*warm, bG=1-0.22*warm, gG=1-0.10*grn;
-  const exp=1+(A.exposure||0)/100*0.55;
+  const exp=Math.pow(2,(A.exposure||0)/100*0.85);           // perceptual stops (was harsh linear ×0.45–1.55)
   const pSat=P.mono?1:lerp(1,(P.sat==null?1:P.sat),k);      // mono keeps colour for the blend
   const sat=Math.max(0,pSat*(1+(A.saturation||0)/100));
-  const con=lerp(1,(P.con==null?1:P.con),k)*(1+(A.contrast||0)/100*0.6);
+  // user contrast is ADDITIVE over the preset's baked contrast (not multiplicative) + clamped,
+  // so a punchy LUT and a slider push can't compound into a blown-out image.
+  const con=clamp(lerp(1,(P.con==null?1:P.con),k)+(A.contrast||0)/100*0.5,0.4,2.0);
   const hi=(A.highlights||0)/100*4;
   const sh=(A.shadows||0)/100*4;
   const lift=clamp((P.lift||0)*k+(A.fade||0)/100*0.45,0,0.7);
