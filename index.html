@@ -1100,7 +1100,8 @@ function buildToolSlider(rail){
   rail.appendChild(val);rail.appendChild(range);
   const inp=range.querySelector('input');inp.value=vals[toolK];
   updToolSlider();
-  inp.addEventListener('input',()=>{vals[toolK]=parseFloat(inp.value);updToolSlider();paintLook();});
+  inp.addEventListener('input',()=>{vals[toolK]=parseFloat(inp.value);updToolSlider();paintLook(true);});   // draft while dragging
+  inp.addEventListener('change',()=>{vals[toolK]=parseFloat(inp.value);updToolSlider();paintLook(false);}); // full on release
 }
 function updToolSlider(){
   const a=SLIDER_BY_K[toolK], v=vals[toolK], f=$('#toolFill'), inp=$('#toolInput');
@@ -1121,11 +1122,15 @@ function buildToolMenu(menu){
 //// ---------- EDITOR PREVIEW (canvas, full film engine) ----------
 const pvCanvas=$('#pvCanvas');
 function paint(){paintPreview();$('#btnExport').hidden=!userImg;}
-let pvScheduled=false;
-function paintPreview(){
+let pvScheduled=false, pvFull=false;
+// draft=true → fast low-res render (while dragging a slider); default/false → full quality.
+// The full-quality request always wins so the frame that lands after release is sharp.
+function paintPreview(draft){
   if(!cur)return;
+  if(!draft)pvFull=true;
   if(pvScheduled)return;pvScheduled=true;
   requestAnimationFrame(()=>{pvScheduled=false;
+    const full=pvFull; pvFull=false;
     // crop mode: WYSIWYG result when a transform is set (rot/perspective), else full image (box overlays);
     // outside crop mode: the applied crop+transform.
     const geo = cropMode ? cropDraft : cropN;
@@ -1139,7 +1144,7 @@ function paintPreview(){
       src=userImg||baseImg; IW=src.naturalWidth||src.width||3; IH=src.naturalHeight||src.height||2;
       reg={sx:0,sy:0,sw:IW,sh:IH};
     }
-    let w=reg.sw, h=reg.sh, m=Math.max(w,h), cap=1100;
+    let w=reg.sw, h=reg.sh, m=Math.max(w,h), cap=full?1100:640;   // low-res while scrubbing → smooth
     if(m>cap){const s=cap/m;w*=s;h*=s;}
     renderRecipe(src, cur, vals, pvCanvas, Math.round(w), Math.round(h), {crop:reg});});
 }
